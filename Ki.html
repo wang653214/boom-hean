@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,500;0,700;1,300;1,500&family=Noto+Serif+SC:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root {
+:root{
   --bg:#08080e;
   --surface:rgba(18,17,28,0.88);
   --surface-solid:#12111c;
@@ -25,9 +25,10 @@
   --text-dim:#4a4550;
   --serif:'Noto Serif SC','Songti SC','SimSun',serif;
   --display:'Cormorant Garamond','Noto Serif SC',serif;
+  --player-h:64px;
 }
 html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:var(--accent-deep) var(--bg)}
-body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-weight:300;font-size:17px;line-height:2;letter-spacing:0.02em;overflow-x:hidden}
+body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-weight:300;font-size:17px;line-height:2;letter-spacing:0.02em;overflow-x:hidden;padding-bottom:var(--player-h)}
 ::selection{background:var(--accent-deep);color:var(--text-primary)}
 ::-webkit-scrollbar{width:6px}
 ::-webkit-scrollbar-track{background:var(--bg)}
@@ -36,14 +37,29 @@ body{background:var(--bg);color:var(--text-body);font-family:var(--serif);font-w
 /* ====== GRAIN ====== */
 body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");opacity:0.03;pointer-events:none;z-index:9999}
 
+/* ====== WATERMARK ====== */
+.watermark{
+  position:fixed;
+  bottom:calc(var(--player-h) + 12px);
+  left:50%;
+  transform:translateX(-50%);
+  font-family:var(--display);
+  font-size:0.65rem;
+  letter-spacing:0.4em;
+  color:rgba(255,255,255,0.06);
+  pointer-events:none;
+  z-index:50;
+  white-space:nowrap;
+  user-select:none;
+  transition:opacity 0.5s ease;
+}
+
 /* ====== SAKURA CANVAS ====== */
 #sakura-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9998}
 
 /* =============================================
-   MUSIC PLAYER — 全新播放器系统
+   MUSIC OVERLAY
    ============================================= */
-
-/* --- 启动遮罩 --- */
 .music-overlay{position:fixed;inset:0;z-index:10001;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(8,8,14,0.97);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);cursor:pointer;transition:opacity 0.8s ease,visibility 0.8s ease}
 .music-overlay.hidden{opacity:0;visibility:hidden;pointer-events:none}
 .overlay-disc{position:relative;width:120px;height:120px;margin-bottom:2.5rem}
@@ -57,73 +73,97 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .overlay-artist{font-size:0.8rem;color:var(--text-muted);margin-bottom:2.5rem}
 .overlay-hint{font-size:0.65rem;color:var(--text-dim);letter-spacing:0.25em;animation:fadeUp 1s 0.5s ease forwards;opacity:0;text-transform:uppercase}
 
-/* --- 底部播放器主体 --- */
-.music-bar{position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(12,11,16,0.95);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-top:1px solid rgba(232,160,180,0.08);transform:translateY(100%);transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);padding:0}
+/* =============================================
+   PC 播放器 — 底部横条
+   ============================================= */
+.music-bar{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:rgba(12,11,16,0.97);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid rgba(232,160,180,0.08);
+  transform:translateY(100%);
+  transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);
+  height:var(--player-h);
+}
 .music-bar.visible{transform:translateY(0)}
 
-/* 进度条 */
-.progress-wrap{position:absolute;top:-3px;left:0;right:0;height:3px;background:rgba(255,255,255,0.05);cursor:pointer;z-index:5;transition:height 0.15s ease}
-.progress-wrap:hover{height:6px}
+.progress-wrap{position:absolute;top:-2px;left:0;right:0;height:3px;background:rgba(255,255,255,0.04);cursor:pointer;z-index:5;transition:height 0.15s ease}
+.progress-wrap:hover{height:5px}
 .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent-glow));width:0%;transition:width 0.25s linear;border-radius:0 2px 2px 0;position:relative}
 .progress-fill::after{content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%;background:var(--accent-glow);opacity:0;transition:opacity 0.15s ease;box-shadow:0 0 8px rgba(240,184,200,0.5)}
 .progress-wrap:hover .progress-fill::after{opacity:1}
 
-.music-bar-inner{display:flex;align-items:center;gap:0;padding:0.6rem 1.5rem;max-width:100%}
+.bar-inner{display:flex;align-items:center;height:100%;padding:0 1.5rem;gap:0}
 
-/* 左侧：歌曲信息 */
-.now-playing{display:flex;align-items:center;gap:0.8rem;min-width:200px;max-width:280px;flex:1}
-.np-cover{width:42px;height:42px;border-radius:4px;background:linear-gradient(135deg,var(--accent-deep),var(--gold-dim));display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--text-primary);flex-shrink:0;position:relative;overflow:hidden}
+/* 左：歌曲信息 */
+.np-info{display:flex;align-items:center;gap:0.8rem;min-width:180px;max-width:260px;flex:1}
+.np-cover{width:40px;height:40px;border-radius:4px;background:linear-gradient(135deg,var(--accent-deep),var(--gold-dim));display:flex;align-items:center;justify-content:center;font-size:1rem;color:var(--text-primary);flex-shrink:0;position:relative;overflow:hidden}
 .np-cover.spinning{animation:coverSpin 8s linear infinite}
 @keyframes coverSpin{to{transform:rotate(360deg)}}
-.np-cover::after{content:'';position:absolute;inset:30%;border-radius:50%;background:var(--bg);opacity:0.6}
-.np-info{min-width:0}
-.np-title{font-size:0.8rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
-.np-artist{font-size:0.65rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np-cover::after{content:'';position:absolute;inset:28%;border-radius:50%;background:var(--bg);opacity:0.6}
+.np-text{min-width:0}
+.np-title{font-size:0.78rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+.np-artist{font-size:0.62rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* 中间：播放控制 */
-.playback-controls{display:flex;align-items:center;gap:0.3rem;flex-shrink:0}
-.ctrl-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.5rem;border-radius:50%;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;font-size:0.9rem}
+.eq-bars{display:flex;align-items:flex-end;gap:2px;height:14px;flex-shrink:0;margin-left:0.2rem}
+.eq-bars span{display:block;width:2.5px;background:var(--accent);border-radius:1px}
+.eq-bars span:nth-child(1){height:4px;animation:eqB 0.7s 0s ease-in-out infinite alternate}
+.eq-bars span:nth-child(2){height:9px;animation:eqB 0.7s 0.12s ease-in-out infinite alternate}
+.eq-bars span:nth-child(3){height:6px;animation:eqB 0.7s 0.24s ease-in-out infinite alternate}
+.eq-bars span:nth-child(4){height:11px;animation:eqB 0.7s 0.08s ease-in-out infinite alternate}
+.music-bar:not(.is-playing) .eq-bars span{animation:none;height:3px;opacity:0.3}
+@keyframes eqB{0%{transform:scaleY(0.3)}100%{transform:scaleY(1)}}
+
+/* 中：播放控制 */
+.playback{display:flex;align-items:center;gap:0.2rem;flex-shrink:0}
+.ctrl-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.45rem;border-radius:50%;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;font-size:0.85rem}
 .ctrl-btn:hover{color:var(--text-primary);background:rgba(255,255,255,0.05)}
 .ctrl-btn.active{color:var(--accent)}
-.ctrl-btn.play-pause{width:42px;height:42px;border:2px solid var(--accent);color:var(--accent);font-size:1rem;margin:0 0.3rem}
-.ctrl-btn.play-pause:hover{background:var(--accent-deep);color:var(--text-primary);transform:scale(1.08)}
+.ctrl-btn.pp{width:40px;height:40px;border:2px solid var(--accent);color:var(--accent);font-size:0.95rem;margin:0 0.2rem}
+.ctrl-btn.pp:hover{background:var(--accent-deep);color:var(--text-primary);transform:scale(1.08)}
 
-/* 时间 */
-.time-display{font-family:var(--display);font-size:0.7rem;color:var(--text-dim);min-width:90px;text-align:center;flex-shrink:0;letter-spacing:0.05em}
+.time-display{font-family:var(--display);font-size:0.68rem;color:var(--text-dim);min-width:85px;text-align:center;flex-shrink:0;letter-spacing:0.04em}
 
-/* 右侧：音量+播放列表按钮 */
-.right-controls{display:flex;align-items:center;gap:0.5rem;flex:1;justify-content:flex-end;min-width:0}
-.volume-group{display:flex;align-items:center;gap:0.3rem}
-.vol-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.3rem;font-size:0.8rem;transition:color 0.2s ease}
+/* 右：音量+列表 */
+.right-ctrls{display:flex;align-items:center;gap:0.4rem;flex:1;justify-content:flex-end;min-width:0}
+.vol-group{display:flex;align-items:center;gap:0.3rem}
+.vol-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.3rem;font-size:0.75rem;transition:color 0.2s ease}
 .vol-btn:hover{color:var(--accent)}
 .vol-slider{-webkit-appearance:none;appearance:none;width:70px;height:3px;background:var(--surface-light);border-radius:2px;outline:none;cursor:pointer}
 .vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
 .vol-slider::-moz-range-thumb{width:10px;height:10px;border-radius:50%;background:var(--accent);cursor:pointer;border:none}
-.playlist-toggle{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.4rem;font-size:0.9rem;transition:all 0.2s ease;border-radius:4px}
-.playlist-toggle:hover{color:var(--accent);background:rgba(255,255,255,0.05)}
-.playlist-toggle.active{color:var(--accent)}
+.pl-toggle{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.4rem;font-size:0.85rem;transition:all 0.2s ease;border-radius:4px}
+.pl-toggle:hover{color:var(--accent);background:rgba(255,255,255,0.05)}
+.pl-toggle.active{color:var(--accent)}
 
-/* --- 播放列表面板 --- */
-.playlist-panel{position:fixed;bottom:60px;right:1.5rem;width:340px;max-height:420px;background:rgba(12,11,16,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(232,160,180,0.1);border-radius:12px;z-index:199;overflow:hidden;transform:translateY(10px);opacity:0;visibility:hidden;transition:all 0.35s cubic-bezier(0.4,0,0.2,1);box-shadow:0 20px 60px rgba(0,0,0,0.5)}
-.playlist-panel.open{transform:translateY(0);opacity:1;visibility:visible}
-.pl-header{padding:1rem 1.2rem 0.6rem;display:flex;align-items:center;justify-content:between;border-bottom:1px solid rgba(255,255,255,0.04)}
-.pl-header-title{font-size:0.8rem;color:var(--text-muted);letter-spacing:0.15em;flex:1}
-.pl-header-count{font-size:0.65rem;color:var(--text-dim);font-family:var(--display)}
-.pl-list{overflow-y:auto;max-height:340px;padding:0.3rem 0}
+/* ====== 播放列表面板 ====== */
+.pl-panel{
+  position:fixed;bottom:var(--player-h);right:1.5rem;width:340px;max-height:400px;
+  background:rgba(12,11,16,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(232,160,180,0.1);border-radius:12px 12px 0 0;
+  z-index:199;overflow:hidden;
+  transform:translateY(10px);opacity:0;visibility:hidden;
+  transition:all 0.35s cubic-bezier(0.4,0,0.2,1);
+  box-shadow:0 -10px 40px rgba(0,0,0,0.4);
+}
+.pl-panel.open{transform:translateY(0);opacity:1;visibility:visible}
+.pl-header{padding:1rem 1.2rem 0.6rem;display:flex;align-items:center;border-bottom:1px solid rgba(255,255,255,0.04)}
+.pl-header-title{font-size:0.78rem;color:var(--text-muted);letter-spacing:0.15em;flex:1}
+.pl-header-count{font-size:0.62rem;color:var(--text-dim);font-family:var(--display)}
+.pl-list{overflow-y:auto;max-height:330px;padding:0.3rem 0}
 .pl-list::-webkit-scrollbar{width:3px}
 .pl-list::-webkit-scrollbar-thumb{background:var(--accent-deep);border-radius:2px}
-.pl-item{display:flex;align-items:center;gap:0.8rem;padding:0.65rem 1.2rem;cursor:pointer;transition:all 0.2s ease;position:relative}
+.pl-item{display:flex;align-items:center;gap:0.7rem;padding:0.6rem 1.2rem;cursor:pointer;transition:all 0.2s ease;position:relative}
 .pl-item:hover{background:rgba(232,160,180,0.05)}
 .pl-item.active{background:rgba(232,160,180,0.08)}
 .pl-item.active::before{content:'';position:absolute;left:0;top:15%;bottom:15%;width:2px;background:var(--accent);border-radius:1px}
-.pl-item-num{font-family:var(--display);font-size:0.7rem;color:var(--text-dim);width:20px;text-align:center;flex-shrink:0}
+.pl-item-num{font-family:var(--display);font-size:0.68rem;color:var(--text-dim);width:20px;text-align:center;flex-shrink:0}
 .pl-item.active .pl-item-num{color:var(--accent)}
 .pl-item-info{flex:1;min-width:0}
-.pl-item-title{font-size:0.8rem;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-item-title{font-size:0.78rem;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-item.active .pl-item-title{color:var(--accent)}
-.pl-item-artist{font-size:0.65rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl-item-duration{font-family:var(--display);font-size:0.65rem;color:var(--text-dim);flex-shrink:0}
-.pl-item-eq{display:none;gap:2px;align-items:flex-end;height:14px;flex-shrink:0}
+.pl-item-artist{font-size:0.62rem;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-item-eq{display:none;gap:2px;align-items:flex-end;height:12px;flex-shrink:0}
 .pl-item.active.playing-item .pl-item-eq{display:flex}
 .pl-item.active.playing-item .pl-item-num-text{display:none}
 .pl-item-eq span{display:block;width:2px;background:var(--accent);border-radius:1px;animation:plEq 0.6s ease-in-out infinite alternate}
@@ -132,17 +172,94 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .pl-item-eq span:nth-child(3){height:5px;animation-delay:0.3s}
 @keyframes plEq{0%{transform:scaleY(0.3)}100%{transform:scaleY(1)}}
 
-/* --- 均衡器动画 (播放器上) --- */
-.eq-bars{display:flex;align-items:flex-end;gap:2px;height:16px;flex-shrink:0;margin-left:0.3rem}
-.eq-bars span{display:block;width:2.5px;background:var(--accent);border-radius:1px}
-.eq-bars span:nth-child(1){height:5px;animation:eqB 0.7s 0s ease-in-out infinite alternate}
-.eq-bars span:nth-child(2){height:10px;animation:eqB 0.7s 0.12s ease-in-out infinite alternate}
-.eq-bars span:nth-child(3){height:7px;animation:eqB 0.7s 0.24s ease-in-out infinite alternate}
-.eq-bars span:nth-child(4){height:12px;animation:eqB 0.7s 0.08s ease-in-out infinite alternate}
-.music-bar:not(.is-playing) .eq-bars span{animation:none;height:3px;opacity:0.3}
-@keyframes eqB{0%{transform:scaleY(0.3)}100%{transform:scaleY(1)}}
+/* =============================================
+   移动端播放器 — 底部迷你条 + 上滑全屏
+   ============================================= */
+.music-bar-mobile{
+  position:fixed;bottom:0;left:0;right:0;z-index:201;
+  background:rgba(12,11,16,0.97);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid rgba(232,160,180,0.08);
+  transform:translateY(100%);
+  transition:transform 0.6s cubic-bezier(0.4,0,0.2,1);
+  display:none;
+}
+.music-bar-mobile.visible{transform:translateY(0)}
 
-/* ====== HERO ====== */
+/* 迷你条 */
+.m-bar{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0.8rem;height:56px;position:relative}
+.m-bar .progress-mini{position:absolute;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,0.04)}
+.m-bar .progress-mini-fill{height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent-glow));width:0%;transition:width 0.25s linear}
+.m-cover{width:36px;height:36px;border-radius:4px;background:linear-gradient(135deg,var(--accent-deep),var(--gold-dim));display:flex;align-items:center;justify-content:center;font-size:0.85rem;color:var(--text-primary);flex-shrink:0;position:relative;overflow:hidden}
+.m-cover.spinning{animation:coverSpin 8s linear infinite}
+.m-cover::after{content:'';position:absolute;inset:28%;border-radius:50%;background:var(--bg);opacity:0.6}
+.m-text{flex:1;min-width:0}
+.m-title{font-size:0.75rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:400}
+.m-artist{font-size:0.6rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.m-ctrls{display:flex;align-items:center;gap:0.2rem;flex-shrink:0}
+.m-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.4rem;font-size:1rem;transition:color 0.2s ease;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.m-btn:active{color:var(--accent);transform:scale(0.9)}
+.m-btn.pp-m{color:var(--accent);font-size:1.2rem}
+.m-expand{background:none;border:none;color:var(--text-dim);cursor:pointer;padding:0.3rem;font-size:0.7rem;transition:color 0.2s ease}
+
+/* 全屏展开 */
+.m-fullscreen{
+  position:fixed;inset:0;z-index:210;
+  background:rgba(8,8,14,0.98);
+  backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
+  display:flex;flex-direction:column;
+  transform:translateY(100%);
+  transition:transform 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+.m-fullscreen.open{transform:translateY(0)}
+.m-fs-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem}
+.m-fs-close{background:none;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;padding:0.5rem}
+.m-fs-close:active{color:var(--accent)}
+.m-fs-label{font-size:0.7rem;color:var(--text-dim);letter-spacing:0.15em;text-transform:uppercase}
+.m-fs-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 2rem}
+.m-fs-cover{width:200px;height:200px;border-radius:12px;background:linear-gradient(135deg,var(--accent-deep),var(--gold-dim));display:flex;align-items:center;justify-content:center;font-size:4rem;color:var(--text-primary);margin-bottom:2rem;position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.4)}
+.m-fs-cover.spinning{animation:coverSpin 8s linear infinite}
+.m-fs-cover::after{content:'';position:absolute;inset:35%;border-radius:50%;background:var(--bg);opacity:0.5}
+.m-fs-title{font-size:1.2rem;color:var(--text-primary);font-weight:600;margin-bottom:0.3rem;text-align:center}
+.m-fs-artist{font-size:0.85rem;color:var(--text-muted);margin-bottom:2rem;text-align:center}
+.m-fs-progress{width:100%;max-width:360px;margin-bottom:1rem}
+.m-fs-progress-bar{width:100%;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;cursor:pointer;position:relative}
+.m-fs-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent-deep),var(--accent-glow));border-radius:2px;width:0%;transition:width 0.25s linear}
+.m-fs-times{display:flex;justify-content:space-between;width:100%;max-width:360px;font-family:var(--display);font-size:0.65rem;color:var(--text-dim);margin-bottom:2rem}
+.m-fs-controls{display:flex;align-items:center;gap:1rem}
+.m-fs-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0.6rem;font-size:1.3rem;border-radius:50%;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center}
+.m-fs-btn:active{color:var(--accent);transform:scale(0.9)}
+.m-fs-btn.active{color:var(--accent)}
+.m-fs-btn.pp-fs{width:56px;height:56px;border:2px solid var(--accent);color:var(--accent);font-size:1.5rem}
+.m-fs-btn.pp-fs:active{background:var(--accent-deep);color:var(--text-primary)}
+.m-fs-vol{display:flex;align-items:center;gap:0.5rem;width:100%;max-width:300px;margin-top:2rem}
+.m-fs-vol-icon{color:var(--text-dim);font-size:0.9rem;flex-shrink:0}
+.m-fs-vol-slider{-webkit-appearance:none;appearance:none;flex:1;height:3px;background:var(--surface-light);border-radius:2px;outline:none}
+.m-fs-vol-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);border:none}
+.m-fs-vol-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--accent);border:none}
+
+/* 移动端播放列表 */
+.m-pl-panel{
+  position:fixed;bottom:56px;left:0;right:0;z-index:200;
+  max-height:50vh;
+  background:rgba(12,11,16,0.97);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-top:1px solid rgba(232,160,180,0.1);
+  border-radius:16px 16px 0 0;
+  transform:translateY(100%);opacity:0;visibility:hidden;
+  transition:all 0.35s cubic-bezier(0.4,0,0.2,1);
+  overflow:hidden;
+}
+.m-pl-panel.open{transform:translateY(0);opacity:1;visibility:visible}
+.m-pl-header{padding:0.8rem 1rem 0.5rem;display:flex;align-items:center;border-bottom:1px solid rgba(255,255,255,0.04)}
+.m-pl-header-title{font-size:0.75rem;color:var(--text-muted);flex:1}
+.m-pl-header-count{font-size:0.6rem;color:var(--text-dim)}
+.m-pl-list{overflow-y:auto;max-height:calc(50vh - 50px);padding:0.2rem 0}
+.m-pl-list::-webkit-scrollbar{width:2px}
+.m-pl-list::-webkit-scrollbar-thumb{background:var(--accent-deep);border-radius:2px}
+
+/* =============================================
+   HERO
+   ============================================= */
 .hero{position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:2rem;overflow:hidden}
 .hero-bg{position:absolute;inset:0;background:url('https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1920&q=80') center center/cover no-repeat;filter:brightness(0.25) saturate(0.6);transform:scale(1.05);transition:transform 20s ease}
 .hero:hover .hero-bg{transform:scale(1.12)}
@@ -161,7 +278,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .scroll-hint .line{width:1px;height:40px;background:linear-gradient(to bottom,var(--accent-deep),transparent);animation:scrollPulse 2s ease-in-out infinite}
 @keyframes scrollPulse{0%,100%{opacity:0.3;transform:scaleY(1)}50%{opacity:1;transform:scaleY(1.3)}}
 
-/* ====== NAV ====== */
+/* ====== NAV (PC 右侧) ====== */
 .chapter-nav{position:fixed;right:1.5rem;top:50%;transform:translateY(-50%);z-index:100;display:flex;flex-direction:column;gap:0.6rem;opacity:0;transition:opacity 0.5s ease}
 .chapter-nav.visible{opacity:1}
 .chapter-nav a{width:8px;height:8px;border-radius:50%;background:var(--text-dim);transition:all 0.3s ease;position:relative;display:block}
@@ -249,12 +366,30 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .toc-chapter{font-size:0.95rem;color:var(--text-body);transition:color 0.3s ease}
 .toc-page{font-family:var(--display);font-size:0.8rem;color:var(--text-dim)}
 
-footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-light);font-size:0.75rem;color:var(--text-dim);letter-spacing:0.1em}
+footer{text-align:center;padding:3rem 2rem 6rem;border-top:1px solid var(--surface-light);font-size:0.75rem;color:var(--text-dim);letter-spacing:0.1em}
 
 @keyframes fadeUp{from{opacity:0;transform:translateY(25px)}to{opacity:1;transform:translateY(0)}}
 
+/* =============================================
+   响应式：PC vs 移动端
+   ============================================= */
+
+/* ---- PC（>= 769px）---- */
+@media(min-width:769px){
+  .music-bar-mobile{display:none!important}
+  .m-pl-panel{display:none!important}
+  .m-fullscreen{display:none!important}
+  .music-bar{display:block}
+  :root{--player-h:64px}
+}
+
+/* ---- 移动端（<= 768px）---- */
 @media(max-width:768px){
-  body{font-size:16px;line-height:1.9}
+  body{font-size:16px;line-height:1.9;padding-bottom:56px}
+  :root{--player-h:0px}
+  .music-bar{display:none!important}
+  .pl-panel{display:none!important}
+  .music-bar-mobile{display:block}
   .chapter{padding:4rem 1.2rem 3rem}
   .chapter-nav{display:none}
   .hero-meta{flex-direction:column;gap:0.5rem}
@@ -262,16 +397,15 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
   .letter-block{padding:1.5rem}
   .diary-entry{padding:1.2rem 1.5rem}
   .image-break{height:30vh}
-  .music-bar-inner{padding:0.5rem 0.8rem}
-  .now-playing{min-width:120px;max-width:160px}
-  .time-display{display:none}
-  .vol-slider{width:50px}
-  .playlist-panel{right:0.5rem;left:0.5rem;width:auto}
-  .np-cover{width:36px;height:36px}
+  .watermark{bottom:68px;font-size:0.55rem}
+  .scroll-hint{bottom:4rem}
 }
 </style>
 </head>
 <body>
+
+<!-- ============ WATERMARK ============ -->
+<div class="watermark">王 和 安</div>
 
 <!-- ============ MUSIC OVERLAY ============ -->
 <div class="music-overlay" id="musicOverlay">
@@ -286,8 +420,10 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
   <div class="overlay-hint">点击任意位置开始播放 · 进入阅读</div>
 </div>
 
-<!-- ============ PLAYLIST PANEL ============ -->
-<div class="playlist-panel" id="playlistPanel">
+<!-- =============================================
+     PC 播放器
+     ============================================= -->
+<div class="pl-panel" id="plPanel">
   <div class="pl-header">
     <span class="pl-header-title">播放列表</span>
     <span class="pl-header-count" id="plCount"></span>
@@ -295,41 +431,100 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
   <div class="pl-list" id="plList"></div>
 </div>
 
-<!-- ============ MUSIC BAR ============ -->
 <div class="music-bar" id="musicBar">
   <div class="progress-wrap" id="progressWrap">
     <div class="progress-fill" id="progressFill"></div>
   </div>
-  <div class="music-bar-inner">
-    <div class="now-playing">
+  <div class="bar-inner">
+    <div class="np-info">
       <div class="np-cover" id="npCover">♪</div>
-      <div class="np-info">
+      <div class="np-text">
         <div class="np-title" id="npTitle">我的未来式</div>
         <div class="np-artist" id="npArtist">郭采洁</div>
       </div>
       <div class="eq-bars"><span></span><span></span><span></span><span></span></div>
     </div>
-    <div class="playback-controls">
+    <div class="playback">
       <button class="ctrl-btn" id="shuffleBtn" title="随机播放">🔀</button>
       <button class="ctrl-btn" id="prevBtn" title="上一曲">⏮</button>
-      <button class="ctrl-btn play-pause" id="playPauseBtn" title="播放/暂停">▶</button>
+      <button class="ctrl-btn pp" id="playPauseBtn" title="播放/暂停">▶</button>
       <button class="ctrl-btn" id="nextBtn" title="下一曲">⏭</button>
       <button class="ctrl-btn" id="loopBtn" title="循环模式">🔁</button>
     </div>
-    <div class="time-display">
-      <span id="timeCurrent">0:00</span> / <span id="timeTotal">0:00</span>
-    </div>
-    <div class="right-controls">
-      <div class="volume-group">
+    <div class="time-display"><span id="timeCurrent">0:00</span> / <span id="timeTotal">0:00</span></div>
+    <div class="right-ctrls">
+      <div class="vol-group">
         <button class="vol-btn" id="volBtn" title="静音">🔊</button>
         <input type="range" class="vol-slider" id="volSlider" min="0" max="100" value="60">
       </div>
-      <button class="playlist-toggle" id="plToggle" title="播放列表">☰</button>
+      <button class="pl-toggle" id="plToggle" title="播放列表">☰</button>
     </div>
   </div>
 </div>
 
-<!-- ============ SAKURA CANVAS ============ -->
+<!-- =============================================
+     移动端播放器
+     ============================================= -->
+<div class="m-pl-panel" id="mPlPanel">
+  <div class="m-pl-header">
+    <span class="m-pl-header-title">播放列表</span>
+    <span class="m-pl-header-count" id="mPlCount"></span>
+  </div>
+  <div class="m-pl-list" id="mPlList"></div>
+</div>
+
+<div class="music-bar-mobile" id="mBar">
+  <div class="m-bar">
+    <div class="progress-mini"><div class="progress-mini-fill" id="mProgressFill"></div></div>
+    <div class="m-cover" id="mCover">♪</div>
+    <div class="m-text">
+      <div class="m-title" id="mTitle">我的未来式</div>
+      <div class="m-artist" id="mArtist">郭采洁</div>
+    </div>
+    <div class="m-ctrls">
+      <button class="m-btn" id="mPrevBtn">⏮</button>
+      <button class="m-btn pp-m" id="mPlayBtn">▶</button>
+      <button class="m-btn" id="mNextBtn">⏭</button>
+    </div>
+    <button class="m-expand" id="mExpandBtn">▲</button>
+  </div>
+</div>
+
+<!-- 移动端全屏 -->
+<div class="m-fullscreen" id="mFullscreen">
+  <div class="m-fs-header">
+    <button class="m-fs-close" id="mFsClose">✕</button>
+    <div class="m-fs-label">正在播放</div>
+    <button class="m-fs-close" id="mPlBtn" style="font-size:1rem">☰</button>
+  </div>
+  <div class="m-fs-body">
+    <div class="m-fs-cover" id="mFsCover">♪</div>
+    <div class="m-fs-title" id="mFsTitle">我的未来式</div>
+    <div class="m-fs-artist" id="mFsArtist">郭采洁</div>
+    <div class="m-fs-progress">
+      <div class="m-fs-progress-bar" id="mFsProgressBar">
+        <div class="m-fs-progress-fill" id="mFsProgressFill"></div>
+      </div>
+    </div>
+    <div class="m-fs-times">
+      <span id="mFsTimeCurrent">0:00</span>
+      <span id="mFsTimeTotal">0:00</span>
+    </div>
+    <div class="m-fs-controls">
+      <button class="m-fs-btn" id="mFsShuffle">🔀</button>
+      <button class="m-fs-btn" id="mFsPrev">⏮</button>
+      <button class="m-fs-btn pp-fs" id="mFsPlay">▶</button>
+      <button class="m-fs-btn" id="mFsNext">⏭</button>
+      <button class="m-fs-btn" id="mFsLoop">🔁</button>
+    </div>
+    <div class="m-fs-vol">
+      <span class="m-fs-vol-icon" id="mFsVolIcon">🔊</span>
+      <input type="range" class="m-fs-vol-slider" id="mFsVolSlider" min="0" max="100" value="60">
+    </div>
+  </div>
+</div>
+
+<!-- ============ SAKURA ============ -->
 <canvas id="sakura-canvas"></canvas>
 
 <!-- ============ NAV ============ -->
@@ -392,18 +587,12 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
     <p>青禾大学音乐楼的排练室里，戏剧社社长方时雨趴在桌上，面前是一杯喝了一半的茶，一本翻开的剧本，和窗外簌簌落下的樱花。</p>
     <p>他是被典礼彩排的工作人员发现的。女生推开门时，还以为他只是睡着了——直到她发现他的嘴唇发紫，指尖冰凉。</p>
     <p>法医的结论很快出来：花生过敏引发的过敏性休克。死亡时间约在晚上八点半到九点之间。</p>
-    <p>方时雨对花生严重过敏，这件事戏剧社的人都知道。他从不吃外面的东西，随身带着过敏急救药。但今晚，急救药还在他的口袋里，没来得及用。</p>
-    <p>茶杯里检出了花生油。</p>
-    <p>这不是意外。</p>
-    <p>消息在校园里炸开的速度比樱花凋落还快。到了第二天早上，整个青禾大学都在议论同一件事——谁杀了方时雨？</p>
-    <p>而警方的目光，聚焦在了五个与他关系最密切的人身上。</p>
-    <p>他们每个人都有秘密。他们每个人都有动机。他们每个人都在那个夜晚，走进过音乐楼。</p>
-    <p>更重要的是——他们每个人，都藏着一段从未说出口的感情。</p>
+    <p>茶杯里检出了花生油。这不是意外。</p>
+    <p>警方的目光，聚焦在了五个与他关系最密切的人身上。他们每个人都有秘密。他们每个人都有动机。更重要的是——他们每个人，都藏着一段从未说出口的感情。</p>
   </div>
 </section>
 
 <div class="image-break"><img src="https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1920&q=75" alt="" loading="lazy"><div class="image-caption">青禾大学 · 四月樱花路</div></div>
-
 <div class="divider">✦ ✦ ✦</div>
 
 <!-- ============ CHARACTERS ============ -->
@@ -413,18 +602,18 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
     <h2 class="chapter-title">他们的心事</h2>
   </div>
   <div class="characters-grid">
-    <div class="char-card"><div class="char-avatar" style="border-color:var(--accent);color:var(--accent)">晴</div><div class="char-name">苏晚晴</div><div class="char-role">文学系 · 林昊的女朋友</div><div class="char-desc">温柔安静的女孩，所有人都觉得她拥有一切——优秀的男友、安稳的未来。但她的心跳，已经很久没有为任何人加速过了。直到那封信从乐谱里掉出来。</div></div>
-    <div class="char-card"><div class="char-avatar" style="border-color:var(--gold);color:var(--gold)">昊</div><div class="char-name">林昊</div><div class="char-role">计算机系 · 校园男神</div><div class="char-desc">完美的代名词。成绩优秀、长相出众、温柔体贴。他正秘密筹备一场求婚，但他心底有个声音在问：般配，是否等于相爱？</div></div>
-    <div class="char-card"><div class="char-avatar" style="border-color:#8bc5a0;color:#8bc5a0">念</div><div class="char-name">顾念</div><div class="char-role">音乐系 · 晚晴的闺蜜</div><div class="char-desc">开朗、温暖、大大咧咧。所有人都喜欢她。但没有人知道，她的琴声里藏着一个三年的秘密——一个关于苏晚晴的秘密。</div></div>
-    <div class="char-card"><div class="char-avatar" style="border-color:#b8a0e8;color:#b8a0e8">落</div><div class="char-name">沈星落</div><div class="char-role">美术系 · 大胆张扬</div><div class="char-desc">画笔下的世界热烈而自由，但她的目光只追着一个人。那个人弹琴时微微蹙眉的样子，她画了整整一本速写。</div></div>
-    <div class="char-card"><div class="char-avatar" style="border-color:#a0c4e8;color:#a0c4e8">屿</div><div class="char-name">陈屿</div><div class="char-role">文学系 · 沉默的诗人</div><div class="char-desc">他的诗全系传阅，但没有一个人知道，每一首的主角都是同一个女孩。他用三年的沉默，写了一封最长的情书。</div></div>
-    <div class="char-card"><div class="char-avatar" style="border-color:#e88a8a;color:#e88a8a">雨</div><div class="char-name">方时雨</div><div class="char-role">戏剧社社长 · 死者</div><div class="char-desc">聪明、刻薄、控制欲极强。他最大的乐趣不是戏剧，而是掌握别人的秘密。他以为秘密是权力，却不知道秘密也可以是毒药。</div></div>
+    <div class="char-card"><div class="char-avatar" style="border-color:var(--accent);color:var(--accent)">晴</div><div class="char-name">苏晚晴</div><div class="char-role">文学系 · 林昊的女朋友</div><div class="char-desc">温柔安静的女孩，但她的心跳已经很久没有为任何人加速过了。直到那封信从乐谱里掉出来。</div></div>
+    <div class="char-card"><div class="char-avatar" style="border-color:var(--gold);color:var(--gold)">昊</div><div class="char-name">林昊</div><div class="char-role">计算机系 · 校园男神</div><div class="char-desc">完美的代名词。他正秘密筹备一场求婚，但心底有个声音在问：般配，是否等于相爱？</div></div>
+    <div class="char-card"><div class="char-avatar" style="border-color:#8bc5a0;color:#8bc5a0">念</div><div class="char-name">顾念</div><div class="char-role">音乐系 · 晚晴的闺蜜</div><div class="char-desc">开朗、温暖。但没有人知道，她的琴声里藏着一个三年的秘密——一个关于苏晚晴的秘密。</div></div>
+    <div class="char-card"><div class="char-avatar" style="border-color:#b8a0e8;color:#b8a0e8">落</div><div class="char-name">沈星落</div><div class="char-role">美术系 · 大胆张扬</div><div class="char-desc">画笔下的世界热烈而自由，但她的目光只追着一个人。那个人弹琴的样子，她画了整整一本速写。</div></div>
+    <div class="char-card"><div class="char-avatar" style="border-color:#a0c4e8;color:#a0c4e8">屿</div><div class="char-name">陈屿</div><div class="char-role">文学系 · 沉默的诗人</div><div class="char-desc">他的诗全系传阅，但每一首的主角都是同一个女孩。他用三年的沉默，写了一封最长的情书。</div></div>
+    <div class="char-card"><div class="char-avatar" style="border-color:#e88a8a;color:#e88a8a">雨</div><div class="char-name">方时雨</div><div class="char-role">戏剧社社长 · 死者</div><div class="char-desc">聪明、刻薄、控制欲极强。他以为秘密是权力，却不知道秘密也可以是毒药。</div></div>
   </div>
 </section>
 
 <div class="divider-line"></div>
 
-<!-- ============ CHAPTER 1 ============ -->
+<!-- ============ CH1 ============ -->
 <section class="chapter" id="ch1">
   <div class="chapter-header">
     <div class="chapter-number">Chapter One</div>
@@ -432,40 +621,26 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
     <p class="chapter-epigraph">"如果心动有形状，大概就是她笑起来的样子。"</p>
   </div>
   <div class="chapter-body">
-    <p>苏晚晴有一个习惯，从大一开始写日记。</p>
-    <p>最初的内容很无聊——今天吃了什么、教授讲了什么、林昊说了什么好笑的话。她把日记当成一种仪式，像每天睡前必须喝一杯温水那样自然。</p>
-    <p>但三个月前，日记的内容变了。</p>
-    <p>那天下午，她帮顾念收拾书架。顾念的书架永远是灾难现场——乐谱和小说混在一起，琴弦松松地缠在书角上，角落里还有半盒过期的巧克力。晚晴一边抱怨一边整理，手指碰到一本厚厚的乐谱时，有什么东西从夹页里滑了出来。</p>
-    <p>是一个淡粉色的信封。信封上写着两个字——</p>
-    <p class="dialogue">"晚晴。"</p>
-    <p>她的字迹。她认得出来。</p>
-    <p>那一刻，苏晚晴的心脏像是被人轻轻捏了一下。她没有拆开信封，但她翻过来看了看背面——空白的，什么都没有。信封没有封口，纸张边缘微微卷起，像是被人反复打开又合上。</p>
-    <p>她把信原样塞了回去。然后她站起来，走到阳台上，吹了十分钟的风。</p>
-    <p>从那天起，苏晚晴开始在日记里写一些她以前从不会写的东西。</p>
-    <div class="diary-entry">三月十二日。今天顾念穿了一件白色的毛衣，袖子长出一截，盖住了半个手掌。她弹琴的时候，我一直在看她的手指。我不知道自己在看什么。我以前不会这样。</div>
-    <div class="diary-entry">三月十九日。林昊送了我一束花，我应该高兴的。但我满脑子想的是，顾念今天没有来上课。她是不是生病了？我给她发了消息，她回了一个笑脸。我盯着那个笑脸看了很久。</div>
+    <p>苏晚晴有一个习惯，从大一开始写日记。但三个月前，日记的内容变了。</p>
+    <p>那天下午，她帮顾念收拾书架时，一个淡粉色的信封从乐谱里滑了出来。信封上写着两个字——<p class="dialogue">"晚晴。"</p>
+    <p>她的字迹。那一刻，苏晚晴的心脏像是被人轻轻捏了一下。她把信原样塞了回去，走到阳台上，吹了十分钟的风。</p>
+    <p>从那天起，日记变了。</p>
+    <div class="diary-entry">三月十二日。今天顾念穿了一件白色的毛衣。她弹琴的时候，我一直在看她的手指。我不知道自己在看什么。我以前不会这样。</div>
     <div class="diary-entry">三月二十七日。今天和顾念一起走在樱花路上，她突然转头对我笑了一下。我心跳漏了一拍。我数了。真的漏了一拍。</div>
-    <div class="diary-entry">四月一日。我做了一个梦。梦里顾念坐在钢琴前，弹的是一首我没听过的曲子。阳光从窗户照进来，落在她的侧脸上。我在梦里走过去，坐在她旁边，然后——</div>
-    <p>日记在这里断了。不是因为故事结束了，而是因为苏晚晴写到"然后"这个字的时候，手停在了半空中。她发现自己不敢写下去。</p>
+    <div class="diary-entry">四月一日。我做了一个梦。梦里顾念坐在钢琴前。阳光从窗户照进来，落在她的侧脸上。我在梦里走过去，坐在她旁边，然后——</div>
+    <p>日记在这里断了。她发现自己不敢写下去。</p>
     <p class="thought">如果写下去，就变成真的了。</p>
-    <p>她把日记本合上，塞进抽屉最深处，像塞一封永远不打算寄出的信。但她不知道的是，这本日记已经被人翻看过了。方时雨。</p>
-    <p>他找到苏晚晴的那天下午，阳光很好。他坐在她对面，笑容温和得像春天的风。</p>
-    <p class="dialogue">"晚晴，你那本日记写得真精彩。"</p>
-    <p>晚晴的脸一瞬间变得惨白。</p>
-    <p class="dialogue">"对了，顾念那封情书我也看到了——你们俩的故事要是公开，全校都得轰动。放心，我不会说的——只要你帮我一个小忙。"</p>
-    <p>她怕的不是被林昊知道。她怕的不是被全校知道。她怕的是顾念知道。</p>
-    <p class="thought">如果她知道我看了那封信……如果她知道我写了这些日记……我们之间的一切都会变得不一样。</p>
-    <p>四月五日傍晚，苏晚晴做了一个决定。她要去排练室找方时雨，把日记要回来。她到达音乐楼的时候，是晚上九点整。推开排练室的门，方时雨趴在桌上。她以为他睡着了。</p>
-    <p>桌上放着她的日记本。她悄悄拿走日记本，退出了房间。她没有注意到方时雨的脸色不对。没有注意到他的嘴唇是紫色的。</p>
-    <p>她只是抱着日记本，快步走出了音乐楼，走进了四月的夜风里。樱花落在她的肩上，她没有去拂。</p>
+    <p>但她不知道的是，这本日记已经被人翻看过了。方时雨。他找到苏晚晴：</p>
+    <p class="dialogue">"晚晴，你那本日记写得真精彩。顾念那封情书我也看到了——你们俩的故事要是公开，全校都得轰动。"</p>
+    <p>她怕的不是被全校知道。她怕的是顾念知道。</p>
+    <p>四月五日傍晚，她去排练室找方时雨要回日记。推开门，方时雨趴在桌上。她以为他睡着了，悄悄拿走日记本，走进了四月的夜风里。樱花落在她的肩上，她没有去拂。</p>
   </div>
 </section>
 
 <div class="image-break"><img src="https://images.unsplash.com/photo-1457530378978-8bac673b8062?w=1920&q=75" alt="" loading="lazy"><div class="image-caption">日记本里的秘密，比樱花还轻，却比石头还重</div></div>
-
 <div class="divider">✦ ✦ ✦</div>
 
-<!-- ============ CHAPTER 2 ============ -->
+<!-- ============ CH2 ============ -->
 <section class="chapter" id="ch2">
   <div class="chapter-header">
     <div class="chapter-number">Chapter Two</div>
@@ -473,26 +648,16 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
     <p class="chapter-epigraph">"般配是别人眼中的风景，心动才是自己的心跳。"</p>
   </div>
   <div class="chapter-body">
-    <p>在青禾大学，林昊是所有女生的"理想型"。计算机系年级第一，学生会副主席，校篮球队主力。和苏晚晴站在一起的时候，连路过的老教授都会笑着说："多般配的一对。"</p>
-    <p>林昊也觉得自己应该很幸福。但"应该"这个词，本身就是一种怀疑。</p>
-    <p>大三那年冬天，他第一次意识到问题。那天他和晚晴在图书馆自习，对面坐了一对情侣——男孩偷偷在桌下牵女孩的手，女孩低头笑得眼睛弯弯的。林昊看了他们一眼，然后低头看了看自己和晚晴。他们各自看着各自的书。安静、默契、舒适。像两个室友。不像恋人。</p>
-    <p>大四开学后，他决定求婚。不是因为他终于感受到了心跳加速，而是因为——所有人都觉得他应该求婚。</p>
-    <p>他联系了美术系的沈星落，请她设计一枚戒指。</p>
-    <p class="dialogue">"我要一枚独一无二的，预算不是问题。"</p>
-    <p>沈星落坐在他对面，搅着咖啡，目光却一直飘向窗外。咖啡馆的对面就是音乐楼——这个位置，是她选的。</p>
-    <p class="dialogue">"两年就想求婚，你一定很爱她。"</p>
-    <p>林昊沉默了一秒。<p class="dialogue">"当然。"</p>
-    <p>那一秒的沉默，他自己都没有注意到。但沈星落注意到了。</p>
-    <p>戒指的设计图画了三稿。最后一稿，内侧刻着一行小字：<p class="dialogue">"致晚晴——愿此生共白头。"</p>
-    <p>然而，方时雨知道了另一件事——大二下学期，林昊考试作弊。方时雨手里有一份"认罪书"，以此要挟他免费开发票务系统。</p>
-    <p>四月五日晚上，林昊趁乱溜进排练室，翻出那份认罪书，撕成碎片。走出排练室的时候，方时雨不在。</p>
-    <p>他不知道的是，他离开后不到半小时，方时雨就死了。那枚戒指——最终没有送出去。</p>
+    <p>林昊是所有女生的"理想型"。但他和晚晴在一起时，像两个室友，不像恋人。</p>
+    <p>大四开学后，他决定求婚——不是因为心动，而是因为所有人都觉得他应该。他联系沈星落设计戒指，内侧刻着：<p class="dialogue">"致晚晴——愿此生共白头。"</p>
+    <p>但方时雨知道了林昊大二考试作弊的事，以此要挟。四月五日晚上，林昊趁乱溜进排练室，撕碎了认罪书。</p>
+    <p>他不知道，他离开后不到半小时，方时雨就死了。那枚戒指，最终没有送出去。</p>
   </div>
 </section>
 
 <div class="divider">✦ ✦ ✦</div>
 
-<!-- ============ CHAPTER 3 ============ -->
+<!-- ============ CH3 ============ -->
 <section class="chapter" id="ch3">
   <div class="chapter-header">
     <div class="chapter-number">Chapter Three</div>
@@ -500,33 +665,23 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
     <p class="chapter-epigraph">"我用三年写了这封信，又用三年假装它不存在。"</p>
   </div>
   <div class="chapter-body">
-    <p>顾念第一次意识到自己喜欢苏晚晴，是在大一下学期的一个雨天。那天下午突然下了暴雨，她没有带伞。身后有人拉住了她的衣角。</p>
-    <p class="dialogue">"你傻呀，淋雨会感冒的。"</p>
-    <p>苏晚晴把伞递给她。顾念接过伞的时候，手指碰到了晚晴的手指——温热的、干燥的、比她的手小一号。她的心跳在那一刻乱了。</p>
-    <p class="thought">不对。这不对。她是我的朋友。朋友之间也会有心动的，对吧？</p>
-    <p>大二的某个深夜，她终于对自己承认了。<p class="thought">顾念，你喜欢苏晚晴。不是朋友的喜欢。</p>
+    <p>顾念第一次意识到自己喜欢苏晚晴，是在一个雨天。晚晴把伞递给她，手指碰到了她的手指——温热的、干燥的、比她的手小一号。</p>
     <p>她写了一封情书：</p>
     <div class="letter-block">
       <div class="letter-salutation">晚晴：</div>
-      <p>我不知道该怎么开口。也许我永远都不会把这封信交给你。但我想写下来。</p>
-      <p>我喜欢你。不是朋友之间的那种喜欢。是那种——听到你说话就会微笑的喜欢，看到你和别人走在一起就会难过的喜欢，梦里全是你醒来会失落的喜欢。</p>
-      <p>我知道这份感情大概永远不会有回应。但我不后悔。因为喜欢你这件事，是我这三年里做过的最诚实的事。</p>
-      <p>如果有一天你看到这封信，请不要觉得困扰。你只需要知道——在这个世界上，有一个人觉得你笑起来的样子，比四月的樱花还好看。</p>
+      <p>我喜欢你。不是朋友之间的那种喜欢。是那种——听到你说话就会微笑的喜欢，梦里全是你醒来会失落的喜欢。</p>
+      <p>但我不后悔。因为喜欢你这件事，是我这三年里做过的最诚实的事。</p>
       <div class="letter-signature">—— 顾念</div>
     </div>
-    <p>但三个月前，苏晚晴帮她收拾了书架。信掉出来了。晚晴的耳根是红的。信的位置变了——从第三十二页变成了第三十三页。只差了一页。但那一页的差距，足以说明一切。</p>
-    <p>方时雨拿到了情书的复印件。他找到顾念：</p>
-    <p class="dialogue">"你这种感情本来就不正常，让大家知道又怎样？"</p>
-    <p>"不正常"两个字像一根针，扎进了顾念的太阳穴。</p>
-    <p>四月五日晚上八点半，顾念走进了排练室。方时雨嘲笑她的感情，她趁其不备将花生油滴入了茶中。她走出排练室，在台阶上差点摔倒。然后她开始跑。月光下，樱花落满了她的肩。</p>
+    <p>方时雨拿到了情书的复印件：<p class="dialogue">"你这种感情本来就不正常，让大家知道又怎样？"</p>
+    <p>四月五日晚上，顾念趁方时雨转身时，将花生油滴入了他的茶中。她走出排练室，在台阶上差点摔倒。然后她开始跑。月光下，樱花落满了她的肩。</p>
   </div>
 </section>
 
 <div class="image-break"><img src="https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1920&q=75" alt="" loading="lazy"><div class="image-caption">月光下的樱花，落在她的肩上</div></div>
-
 <div class="divider">✦ ✦ ✦</div>
 
-<!-- ============ CHAPTER 4 ============ -->
+<!-- ============ CH4 ============ -->
 <section class="chapter" id="ch4">
   <div class="chapter-header">
     <div class="chapter-number">Chapter Four</div>
@@ -534,19 +689,18 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
     <p class="chapter-epigraph">"我画了你一百次，每一次都说这是最后一次。"</p>
   </div>
   <div class="chapter-body">
-    <p>沈星落的速写本里，画满了同一个女孩。不是苏晚晴。是顾念。</p>
-    <p>第一次见到顾念，是在大三上学期的校园音乐会上。灯光暗下来，一束追光打在舞台上，一个女生走到钢琴前坐下。肖邦。降E大调夜曲。沈星落放下了手机。那一刻，她觉得自己听懂了——不是听懂了旋律，而是听懂了弹琴的那个人。</p>
-    <p>从那天起，她开始画顾念。速写本上，顾念弹琴的侧脸出现了几十遍。她每天下午去音乐楼对面的咖啡馆，坐在窗边，假装画画。她确实在画。只是画的不是风景。</p>
-    <p>认识之后，沈星落发现了一件让她心碎的事——顾念喜欢苏晚晴。因为顾念看苏晚晴的眼神，和她看顾念的眼神，一模一样。</p>
-    <p class="thought">原来你也和我一样。原来你也在喜欢一个不该喜欢的人。</p>
-    <p>四月五日晚上，沈星落坐在音乐楼外的长椅上画夜景。大约八点四十五分，顾念从楼里慌张跑出来，差点摔倒。沈星落把那一幕画在了速写本上——一个女生的背影，月光下的樱花树，和她微微颤抖的肩膀。</p>
-    <p>她没有追上去。后来她无数次后悔这个决定。</p>
+    <p>沈星落的速写本里，画满了同一个女孩——顾念。</p>
+    <p>第一次见到顾念是在校园音乐会上。肖邦，降E大调夜曲。那一刻，她觉得自己听懂了——不是旋律，而是弹琴的那个人。</p>
+    <p>从那天起，她每天去音乐楼对面的咖啡馆，坐在窗边画顾念弹琴的侧脸。几十遍。</p>
+    <p>后来她发现顾念喜欢苏晚晴。因为顾念看晚晴的眼神，和她看顾念的眼神，一模一样。</p>
+    <p class="thought">原来你也和我一样。</p>
+    <p>四月五日晚上，她看到顾念慌张跑出音乐楼。她把那一幕画在了速写本上。没有追上去。后来她无数次后悔这个决定。</p>
   </div>
 </section>
 
 <div class="divider">✦ ✦ ✦</div>
 
-<!-- ============ CHAPTER 5 ============ -->
+<!-- ============ CH5 ============ -->
 <section class="chapter" id="ch5">
   <div class="chapter-header">
     <div class="chapter-number">Chapter Five</div>
@@ -556,20 +710,14 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
   <div class="chapter-body">
     <p>陈屿暗恋苏晚晴三年了。他把所有感情写进了诗里。</p>
     <div class="poem">她翻书的手指<br>像四月的风<br>轻轻掠过纸页<br>就带走了我整个春天</div>
-    <div class="poem">我在人群中看她<br>她在人群中看他<br>我们都是<br>某个人眼中的风景<br>却不是任何人心中的目的地</div>
-    <p>室友把他的诗发到了公众号上，"青禾诗人陈屿"火了。苏晚晴也看到了。</p>
-    <p class="dialogue">"陈屿，你写得真好，那首《四月的风》，写的是谁呀？"</p>
-    <p class="dialogue">"没……没谁。随便写的。"</p>
-    <p>一个月前，方时雨偷看了苏晚晴的日记。陈屿找他理论：</p>
-    <p class="dialogue">"你以为你保护得了她？你连喜欢她都不敢说。你这种单方面的深情，说好听点叫暗恋，说难听点——叫自我感动。"</p>
-    <p>四月五日晚上，陈屿去排练室要回日记。方时雨翻开日记本朗读起来——"如果心动有形状，大概就是顾念笑起来的样子。"</p>
-    <p>陈屿推了他一把。方时雨撞到了桌子。陈屿走了。他不知道自己的花生酱从包里掉出来了，落在了排练室的角落里。那瓶花生酱会成为指向他的最大证据。</p>
+    <p>方时雨嘲笑他：<p class="dialogue">"你以为你保护得了她？你连喜欢她都不敢说。这叫自我感动。"</p>
+    <p>四月五日晚上，陈屿去排练室要回日记。方时雨朗读了晚晴日记里关于顾念的句子。陈屿推了他一把。走了。他的花生酱从包里掉出来了。那瓶花生酱会成为指向他的最大证据。</p>
   </div>
 </section>
 
 <div class="divider">✦ ✦ ✦</div>
 
-<!-- ============ CHAPTER 6 ============ -->
+<!-- ============ CH6 ============ -->
 <section class="chapter" id="ch6">
   <div class="chapter-header">
     <div class="chapter-number">Chapter Six</div>
@@ -577,22 +725,19 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
     <p class="chapter-epigraph">"真相像樱花一样——你以为它在盛开，其实它在凋落。"</p>
   </div>
   <div class="chapter-body">
-    <p><strong>七点整</strong>，典礼彩排开始。方时雨分别给四个人发了消息："今晚来排练室，有事找你。"</p>
-    <p><strong>七点二十八分</strong>，陈屿推门进来，与方时雨争吵、推搡，七点四十分离开。花生酱瓶从背包滑落。</p>
-    <p><strong>七点五十五分</strong>，林昊趁乱进入，翻找抽屉取走认罪书，撕碎后离开。茶杯里的茶还是满的。</p>
-    <p><strong>八点二十五分</strong>，顾念走进排练室，与方时雨对质。八点三十五分走出，慌张逃离。</p>
-    <p>与此同时，沈星落在楼外看到了顾念跑出来的一幕。</p>
-    <p>排练室里，方时雨端起茶杯，喝了一口。几分钟后，喉咙发紧，呼吸急促。急救药从指间滑落。他趴在了桌上。窗外的樱花还在落。</p>
-    <p><strong>九点整</strong>，苏晚晴推开排练室的门。她以为他只是睡着了。拿起日记本，离开了。</p>
-    <p><strong>九点半</strong>，方时雨被发现已死亡。报警。救护车。警车。封锁线。四月的樱花还在落。但青禾大学的春天，在那一刻结束了。</p>
+    <p><strong>七点二十八分</strong>，陈屿与方时雨争吵后离开。花生酱瓶滑落。</p>
+    <p><strong>七点五十五分</strong>，林昊趁乱进入，撕碎认罪书后离开。</p>
+    <p><strong>八点二十五分</strong>，顾念走进排练室。八点三十五分慌张离开。</p>
+    <p>方时雨端起茶杯，喝了一口。几分钟后，喉咙发紧，呼吸急促。他趴在了桌上。</p>
+    <p><strong>九点整</strong>，苏晚晴推开门，以为他睡着了，拿走日记本离开。</p>
+    <p><strong>九点半</strong>，方时雨被发现已死亡。四月的樱花还在落。但青禾大学的春天，在那一刻结束了。</p>
   </div>
 </section>
 
 <div class="image-break"><img src="https://images.unsplash.com/photo-1462275646964-a0e3c11f18a6?w=1920&q=75" alt="" loading="lazy"><div class="image-caption">音乐楼的灯光，一盏一盏熄灭</div></div>
-
 <div class="divider">✦ ✦ ✦</div>
 
-<!-- ============ CHAPTER 7 ============ -->
+<!-- ============ CH7 ============ -->
 <section class="chapter" id="ch7">
   <div class="chapter-header">
     <div class="chapter-number">Chapter Seven</div>
@@ -601,13 +746,11 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
   </div>
   <div class="chapter-body">
     <p>所有线索指向了同一个人——顾念。</p>
-    <p>当所有证据摊开在桌上的时候，顾念开口了。</p>
-    <p class="dialogue">"是我。我把花生油滴进了他的茶里。我只是想让他难受一下。我没有想到……"</p>
-    <p class="dialogue">"但我不会说我不后悔。因为如果时间倒流，我还是会走进那间排练室。有些人的存在，比你自己的清白更重要。"</p>
-    <p>苏晚晴哭了。不是因为恐惧，而是因为——她终于听到了那封信里的内容。用一种最残酷、最无法挽回的方式。</p>
-    <p>沈星落坐在角落里，一言不发。她本来可以更早说出目击证据。但她没有。因为她看着顾念的眼睛，看到了和自己一样的东西——那种为了一个人可以不顾一切的爱。</p>
-    <p>林昊看着苏晚晴的侧脸——她哭的时候，目光一直追着顾念。他全都明白了。没有愤怒。只有一种漫长的、迟来的释然。</p>
-    <p>有些真相注定要在春天揭开。就像有些花注定要在最盛大的时刻凋落。但凋落不是结束。凋落是为了让新的东西长出来。</p>
+    <p class="dialogue">"是我。我把花生油滴进了他的茶里。我只是想让他难受一下。"</p>
+    <p class="dialogue">"但我不会说我不后悔。有些人的存在，比你自己的清白更重要。"</p>
+    <p>苏晚晴哭了。不是因为恐惧，而是因为她终于听到了那封信里的内容。用一种最残酷、最无法挽回的方式。</p>
+    <p>林昊看着晚晴哭的时候一直追着顾念的目光。他全都明白了。没有愤怒。只有一种迟来的释然。</p>
+    <p>有些真相注定要在春天揭开。凋落不是结束。凋落是为了让新的东西长出来。</p>
   </div>
 </section>
 
@@ -615,7 +758,7 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
   <div class="verdict-box">
     <div class="verdict-label">真 相 揭 晓</div>
     <div class="verdict-name">凶 手 ：顾 念</div>
-    <div class="verdict-reason">她将花生油滴入方时雨的茶中，导致其花生过敏引发过敏性休克死亡。<br>她不是蓄意谋杀，而是在极度愤怒与恐惧中失手犯下的错误。<br>她所做的一切，源于一个三年未曾说出口的秘密——她爱苏晚晴。</div>
+    <div class="verdict-reason">她将花生油滴入方时雨的茶中。她不是蓄意谋杀，而是在极度愤怒与恐惧中失手犯下的错误。她所做的一切，源于一个三年未曾说出口的秘密——她爱苏晚晴。</div>
   </div>
 </section>
 
@@ -629,27 +772,22 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
   </div>
   <div class="confession">
     <div class="confession-name"><span class="confession-dot" style="background:var(--accent)"></span>苏晚晴</div>
-    <p>心动不是一道闪电。心动是无数个微小瞬间的累积。是顾念每天早上放在我桌上的热牛奶，是她弹琴时微微蹙起的眉头，是那封夹在乐谱里的情书上她写的每一个字。</p>
-    <p>我花了四年才看清自己的心。但我想告诉她——那封信，我看到了。从看到的那一刻起，我的心跳就再也没有正常过。顾念……我的心动有形状。就是你。</p>
+    <p>心动不是一道闪电。心动是无数个微小瞬间的累积。那封信，我看到了。从看到的那一刻起，我的心跳就再也没有正常过。顾念……我的心动有形状。就是你。</p>
   </div>
   <div class="confession">
     <div class="confession-name"><span class="confession-dot" style="background:#8bc5a0"></span>顾念</div>
-    <p>我不后悔保护她。我后悔的是用了最愚蠢的方式。方时雨说得对，我的感情"不正常"。但我不在乎。这个世界上有七十亿种"正常"，而我只需要一种——让她快乐。</p>
-    <p>晚晴，如果有一天你读到这些话，请记住：我做的每一件事，蠢的、错的、不可挽回的——都是因为你。因为你值得被保护。哪怕保护你的方式，毁掉了我自己。</p>
+    <p>我不后悔保护她。我后悔的是用了最愚蠢的方式。这个世界上有七十亿种"正常"，而我只需要一种——让她快乐。因为你值得被保护。哪怕保护你的方式，毁掉了我自己。</p>
   </div>
   <div class="confession">
     <div class="confession-name"><span class="confession-dot" style="background:var(--gold)"></span>林昊</div>
-    <p>"般配"不是爱情。我花了两年才明白这个道理。那枚戒指，我最终没有送出去。我看到她哭的时候一直看着顾念。那一刻，我没有愤怒，只有一种奇怪的释然。</p>
-    <p>晚晴，你值得一个让你心跳加速的人。如果那个人不是我——我希望你找到她。</p>
+    <p>"般配"不是爱情。那枚戒指，我最终没有送出去。晚晴，你值得一个让你心跳加速的人。如果那个人不是我——我希望你找到她。</p>
   </div>
   <div class="confession">
     <div class="confession-name"><span class="confession-dot" style="background:#b8a0e8"></span>沈星落</div>
-    <p>我喜欢顾念。这句话我在心里说了一千遍，但从没说出口。我画了她一百次。但我从来没有告诉她。因为她喜欢苏晚晴。我们都是在暗处发光的人——光芒只照得到对方，却永远照不到自己。</p>
-    <p>喜欢一个人，从来不需要理由。就像樱花落了还是会再开。</p>
+    <p>我喜欢顾念。我画了她一百次。喜欢一个人，从来不需要理由。就像樱花落了还是会再开。</p>
   </div>
   <div class="confession">
     <div class="confession-name"><span class="confession-dot" style="background:#a0c4e8"></span>陈屿</div>
-    <p>晚晴，你问我那首《四月的风》写的是谁。我当时说"随便写的"。那是我这辈子说过的最大的谎话。</p>
     <p class="poem">你是我落笔时的犹豫，<br>是我删了又写的句子。<br>如果沉默也算告白，<br>那我已经对你告白了一千次。</p>
     <p>再见了，苏晚晴。愿你找到让你心跳加速的人。</p>
   </div>
@@ -667,51 +805,83 @@ footer{text-align:center;padding:3rem 2rem;border-top:1px solid var(--surface-li
 <footer>
   <p>《心动盲区》 · 青春恋爱推理小说 · 青禾大学樱花季</p>
   <p style="margin-top:0.5rem;font-size:0.65rem;color:var(--text-dim)">有些心动，注定要在最盛大的时刻凋落。但凋落不是结束——凋落是为了让新的东西长出来。</p>
+  <p style="margin-top:1.5rem;font-size:0.6rem;color:rgba(255,255,255,0.08);letter-spacing:0.4em">王 和 安</p>
 </footer>
 
 <script>
 // ============================================================
-//  歌曲列表 —— 在这里添加/修改/删除歌曲
-//  src: 音频文件路径（相对于HTML文件）
-//  title: 歌曲名
-//  artist: 歌手
+//  歌曲列表
 // ============================================================
 const PLAYLIST = [
-  { src: 'Mymc.mp3',            title: '我的未来式',      artist: '郭采洁' },
-  // ↓↓↓ 在下面继续添加歌曲，格式相同 ↓↓↓
-  // { src: 'songs/another.mp3',  title: '另一首歌',        artist: '某歌手' },
-  // { src: 'songs/third.mp3',    title: '第三首歌',        artist: '某歌手' },
-  { src: 'qqqs.mp3',            title: '前前前世',      artist: 'RADWIMPS;' },
-  { src: 'shi.mp3',            title: 'かたわれ時',      artist: 'RADWIMPS;' },
-  { src: 'rad.mp3',            title: 'スパークル',      artist: 'RADWIMPS;' },
+  { src: 'Mymc.mp3',  title: '我的未来式',   artist: '郭采洁' },
+  { src: 'qqqs.mp3',  title: '前前前世',     artist: 'RADWIMPS' },
+  { src: 'shi.mp3',   title: 'かたわれ時',   artist: 'RADWIMPS' },
+  { src: 'rad.mp3',   title: 'スパークル',   artist: 'RADWIMPS' },
 ];
 
 // ============================================================
-//  DOM 元素
+//  检测是否移动端
 // ============================================================
-const audio         = new Audio();
-const overlay       = document.getElementById('musicOverlay');
-const overlaySong   = document.getElementById('overlaySong');
-const overlayArtist = document.getElementById('overlayArtist');
-const bar           = document.getElementById('musicBar');
-const playPauseBtn  = document.getElementById('playPauseBtn');
-const prevBtn       = document.getElementById('prevBtn');
-const nextBtn       = document.getElementById('nextBtn');
-const shuffleBtn    = document.getElementById('shuffleBtn');
-const loopBtn       = document.getElementById('loopBtn');
-const npTitle       = document.getElementById('npTitle');
-const npArtist      = document.getElementById('npArtist');
-const npCover       = document.getElementById('npCover');
-const progressWrap  = document.getElementById('progressWrap');
-const progressFill  = document.getElementById('progressFill');
-const timeCurrent   = document.getElementById('timeCurrent');
-const timeTotal     = document.getElementById('timeTotal');
-const volBtn        = document.getElementById('volBtn');
-const volSlider     = document.getElementById('volSlider');
-const plToggle      = document.getElementById('plToggle');
-const plPanel       = document.getElementById('playlistPanel');
-const plList        = document.getElementById('plList');
-const plCount       = document.getElementById('plCount');
+const isMobile = /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  || window.innerWidth <= 768;
+
+// ============================================================
+//  DOM
+// ============================================================
+const audio = new Audio();
+const overlay = document.getElementById('musicOverlay');
+
+// PC 元素
+const musicBar    = document.getElementById('musicBar');
+const playPauseBtn= document.getElementById('playPauseBtn');
+const prevBtn     = document.getElementById('prevBtn');
+const nextBtn     = document.getElementById('nextBtn');
+const shuffleBtn  = document.getElementById('shuffleBtn');
+const loopBtn     = document.getElementById('loopBtn');
+const npTitle     = document.getElementById('npTitle');
+const npArtist    = document.getElementById('npArtist');
+const npCover     = document.getElementById('npCover');
+const progressWrap= document.getElementById('progressWrap');
+const progressFill= document.getElementById('progressFill');
+const timeCurrent = document.getElementById('timeCurrent');
+const timeTotal   = document.getElementById('timeTotal');
+const volBtn      = document.getElementById('volBtn');
+const volSlider   = document.getElementById('volSlider');
+const plToggle    = document.getElementById('plToggle');
+const plPanel     = document.getElementById('plPanel');
+const plList      = document.getElementById('plList');
+const plCount     = document.getElementById('plCount');
+
+// 移动端元素
+const mBar        = document.getElementById('mBar');
+const mCover      = document.getElementById('mCover');
+const mTitle      = document.getElementById('mTitle');
+const mArtist     = document.getElementById('mArtist');
+const mPlayBtn    = document.getElementById('mPlayBtn');
+const mPrevBtn    = document.getElementById('mPrevBtn');
+const mNextBtn    = document.getElementById('mNextBtn');
+const mExpandBtn  = document.getElementById('mExpandBtn');
+const mProgressFill = document.getElementById('mProgressFill');
+const mFullscreen = document.getElementById('mFullscreen');
+const mFsClose    = document.getElementById('mFsClose');
+const mFsCover    = document.getElementById('mFsCover');
+const mFsTitle    = document.getElementById('mFsTitle');
+const mFsArtist   = document.getElementById('mFsArtist');
+const mFsPlay     = document.getElementById('mFsPlay');
+const mFsPrev     = document.getElementById('mFsPrev');
+const mFsNext     = document.getElementById('mFsNext');
+const mFsShuffle  = document.getElementById('mFsShuffle');
+const mFsLoop     = document.getElementById('mFsLoop');
+const mFsProgressBar = document.getElementById('mFsProgressBar');
+const mFsProgressFill = document.getElementById('mFsProgressFill');
+const mFsTimeCurrent  = document.getElementById('mFsTimeCurrent');
+const mFsTimeTotal    = document.getElementById('mFsTimeTotal');
+const mFsVolIcon  = document.getElementById('mFsVolIcon');
+const mFsVolSlider= document.getElementById('mFsVolSlider');
+const mPlBtn      = document.getElementById('mPlBtn');
+const mPlPanel    = document.getElementById('mPlPanel');
+const mPlList     = document.getElementById('mPlList');
+const mPlCount    = document.getElementById('mPlCount');
 
 // ============================================================
 //  状态
@@ -719,431 +889,255 @@ const plCount       = document.getElementById('plCount');
 let currentIndex = 0;
 let isPlaying    = false;
 let isShuffle    = false;
-let loopMode     = 1; // 0=不循环 1=列表循环 2=单曲循环
+let loopMode     = 1;
 let prevVolume   = 0.6;
-let userHasInteracted = false; // 标记用户是否已交互
+let userInteracted = false;
 
-audio.volume  = 0.6;
+audio.volume = 0.6;
 audio.preload = 'auto';
 
 // ============================================================
-//  工具函数
+//  工具
 // ============================================================
-function fmt(sec) {
-  if (isNaN(sec) || !isFinite(sec)) return '0:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return m + ':' + (s < 10 ? '0' : '') + s;
+function fmt(s){if(isNaN(s)||!isFinite(s))return'0:00';const m=Math.floor(s/60),ss=Math.floor(s%60);return m+':'+(ss<10?'0':'')+ss}
+function updateVolIcon(){const v=audio.volume;if(typeof volBtn!=='undefined'&&volBtn)volBtn.textContent=v===0?'🔇':v<0.3?'🔈':'🔊';if(mFsVolIcon)mFsVolIcon.textContent=v===0?'🔇':v<0.3?'🔈':'🔊'}
+
+// ============================================================
+//  核心：同步所有 UI
+// ============================================================
+function updateUI(){
+  if(!PLAYLIST.length)return;
+  const t=PLAYLIST[currentIndex];
+  // PC
+  if(npTitle)npTitle.textContent=t.title;
+  if(npArtist)npArtist.textContent=t.artist;
+  // 移动端迷你条
+  if(mTitle)mTitle.textContent=t.title;
+  if(mArtist)mArtist.textContent=t.artist;
+  // 移动端全屏
+  if(mFsTitle)mFsTitle.textContent=t.title;
+  if(mFsArtist)mFsArtist.textContent=t.artist;
+  // overlay
+  document.getElementById('overlaySong').textContent=t.title;
+  document.getElementById('overlayArtist').textContent=t.artist;
+  // 播放列表高亮
+  document.querySelectorAll('.pl-item,.m-pl-item').forEach((el,i)=>{
+    el.classList.toggle('active',i===currentIndex);
+    el.classList.toggle('playing-item',i===currentIndex&&isPlaying);
+  });
+  // 随机/循环按钮状态
+  [shuffleBtn,mFsShuffle].forEach(b=>{if(b)b.classList.toggle('active',isShuffle)});
+  [loopBtn,mFsLoop].forEach(b=>{if(b){b.textContent=loopMode===2?'🔂¹':'🔁';b.classList.toggle('active',loopMode!==0)}});
 }
 
-function updateVolIcon() {
-  const v = audio.volume;
-  volBtn.textContent = v === 0 ? '🔇' : v < 0.3 ? '🔈' : '🔊';
-}
-
-// ============================================================
-//  核心：更新 UI
-// ============================================================
-function updateUI() {
-  if (!PLAYLIST.length) return;
-  const t = PLAYLIST[currentIndex];
-  npTitle.textContent       = t.title;
-  npArtist.textContent      = t.artist;
-  overlaySong.textContent   = t.title;
-  overlayArtist.textContent = t.artist;
-
-  document.querySelectorAll('.pl-item').forEach((el, i) => {
-    el.classList.toggle('active', i === currentIndex);
-    el.classList.toggle('playing-item', i === currentIndex && isPlaying);
+function setPlayingState(playing){
+  isPlaying=playing;
+  // PC
+  if(playPauseBtn)playPauseBtn.textContent=playing?'❚❚':'▶';
+  if(musicBar)musicBar.classList.toggle('is-playing',playing);
+  if(npCover)npCover.classList.toggle('spinning',playing);
+  // 移动端
+  if(mPlayBtn)mPlayBtn.textContent=playing?'❚❚':'▶';
+  if(mFsPlay)mFsPlay.textContent=playing?'❚❚':'▶';
+  if(mCover)mCover.classList.toggle('spinning',playing);
+  if(mFsCover)mFsCover.classList.toggle('spinning',playing);
+  // 列表
+  document.querySelectorAll('.pl-item,.m-pl-item').forEach((el,i)=>{
+    el.classList.toggle('playing-item',i===currentIndex&&playing);
   });
 }
 
 // ============================================================
-//  核心：设置播放/暂停状态
+//  安全播放
 // ============================================================
-function setPlayingState(playing) {
-  isPlaying = playing;
-  playPauseBtn.textContent = playing ? '❚❚' : '▶';
-  bar.classList.toggle('is-playing', playing);
-  npCover.classList.toggle('spinning', playing);
-  document.querySelectorAll('.pl-item').forEach((el, i) => {
-    el.classList.toggle('playing-item', i === currentIndex && playing);
-  });
-}
-
-// ============================================================
-//  核心：安全播放函数（解决浏览器自动播放限制）
-// ============================================================
-function safePlay() {
-  const playPromise = audio.play();
-  if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        setPlayingState(true);
-      })
-      .catch(err => {
-        console.warn('播放被阻止:', err.message);
-        setPlayingState(false);
-        // 如果是自动播放被阻止，等用户下次交互时再播
-        if (err.name === 'NotAllowedError') {
-          const resumeOnInteraction = () => {
-            audio.play().then(() => setPlayingState(true)).catch(() => {});
-            document.removeEventListener('click', resumeOnInteraction);
-            document.removeEventListener('keydown', resumeOnInteraction);
-          };
-          document.addEventListener('click', resumeOnInteraction, { once: true });
-          document.addEventListener('keydown', resumeOnInteraction, { once: true });
-        }
-      });
+function safePlay(){
+  const p=audio.play();
+  if(p!==undefined){
+    p.then(()=>setPlayingState(true)).catch(err=>{
+      console.warn('播放被阻止:',err.message);
+      setPlayingState(false);
+      if(err.name==='NotAllowedError'){
+        const resume=()=>{audio.play().then(()=>setPlayingState(true)).catch(()=>{});document.removeEventListener('click',resume);document.removeEventListener('touchend',resume)};
+        document.addEventListener('click',resume,{once:true});
+        document.addEventListener('touchend',resume,{once:true});
+      }
+    });
   }
 }
 
 // ============================================================
-//  核心：加载曲目
+//  加载曲目
 // ============================================================
-function loadTrack(index, autoplay) {
-  if (!PLAYLIST.length) return;
-
-  // 边界处理
-  currentIndex = ((index % PLAYLIST.length) + PLAYLIST.length) % PLAYLIST.length;
-
-  const t = PLAYLIST[currentIndex];
-
-  // 先暂停当前播放
+function loadTrack(index,autoplay){
+  if(!PLAYLIST.length)return;
+  currentIndex=((index%PLAYLIST.length)+PLAYLIST.length)%PLAYLIST.length;
   audio.pause();
   audio.removeAttribute('src');
-
-  // 设置新源
-  audio.src = t.src;
+  audio.src=PLAYLIST[currentIndex].src;
   audio.load();
-
   updateUI();
-
-  // 只在用户已交互 或 明确要求播放时才播
-  if (autoplay && userHasInteracted) {
-    // 等音频可以播放时再 play
-    const onCanPlay = () => {
-      audio.removeEventListener('canplay', onCanPlay);
-      safePlay();
-    };
-    audio.addEventListener('canplay', onCanPlay);
-
-    // 超时保护：如果 canplay 一直不触发（文件可能有问题），3秒后尝试一次
-    setTimeout(() => {
-      audio.removeEventListener('canplay', onCanPlay);
-      if (!isPlaying && autoplay) safePlay();
-    }, 3000);
-  } else if (autoplay) {
-    // 用户还没交互过，标记等待
-    setPlayingState(false);
-  } else {
+  if(autoplay&&userInteracted){
+    const onCanPlay=()=>{audio.removeEventListener('canplay',onCanPlay);safePlay()};
+    audio.addEventListener('canplay',onCanPlay);
+    setTimeout(()=>{audio.removeEventListener('canplay',onCanPlay);if(!isPlaying&&autoplay)safePlay()},3000);
+  }else{
     setPlayingState(false);
   }
 }
 
-// ============================================================
-//  播放 / 暂停
-// ============================================================
-function togglePlay() {
-  userHasInteracted = true;
-
-  if (!audio.src || !PLAYLIST.length) {
-    loadTrack(0, true);
-    return;
-  }
-
-  if (isPlaying) {
-    audio.pause();
-    setPlayingState(false);
-  } else {
-    safePlay();
-  }
+function togglePlay(){
+  userInteracted=true;
+  if(!audio.src||!PLAYLIST.length){loadTrack(0,true);return}
+  if(isPlaying){audio.pause();setPlayingState(false)}
+  else safePlay();
 }
-
-// ============================================================
-//  上一曲
-// ============================================================
-function prevTrack() {
-  userHasInteracted = true;
-  // 如果已播放超过3秒，重新开始当前曲目
-  if (audio.currentTime > 3) {
-    audio.currentTime = 0;
-    return;
-  }
-  if (isShuffle) {
-    let r;
-    do { r = Math.floor(Math.random() * PLAYLIST.length); } while (r === currentIndex && PLAYLIST.length > 1);
-    loadTrack(r, true);
-  } else {
-    loadTrack(currentIndex - 1, true);
-  }
+function prevTrack(){
+  userInteracted=true;
+  if(audio.currentTime>3){audio.currentTime=0;return}
+  if(isShuffle){let r;do{r=Math.floor(Math.random()*PLAYLIST.length)}while(r===currentIndex&&PLAYLIST.length>1);loadTrack(r,true)}
+  else loadTrack(currentIndex-1,true);
 }
-
-// ============================================================
-//  下一曲
-// ============================================================
-function nextTrack() {
-  userHasInteracted = true;
-  if (isShuffle) {
-    let r;
-    do { r = Math.floor(Math.random() * PLAYLIST.length); } while (r === currentIndex && PLAYLIST.length > 1);
-    loadTrack(r, true);
-  } else {
-    loadTrack(currentIndex + 1, true);
-  }
+function nextTrack(){
+  userInteracted=true;
+  if(isShuffle){let r;do{r=Math.floor(Math.random()*PLAYLIST.length)}while(r===currentIndex&&PLAYLIST.length>1);loadTrack(r,true)}
+  else loadTrack(currentIndex+1,true);
 }
 
 // ============================================================
 //  事件绑定
 // ============================================================
+// PC
+playPauseBtn&&playPauseBtn.addEventListener('click',togglePlay);
+prevBtn&&prevBtn.addEventListener('click',prevTrack);
+nextBtn&&nextBtn.addEventListener('click',nextTrack);
+shuffleBtn&&shuffleBtn.addEventListener('click',()=>{isShuffle=!isShuffle;updateUI()});
+loopBtn&&loopBtn.addEventListener('click',()=>{loopMode=(loopMode+1)%3;audio.loop=(loopMode===2);updateUI()});
 
-// 播放/暂停
-playPauseBtn.addEventListener('click', togglePlay);
-prevBtn.addEventListener('click', prevTrack);
-nextBtn.addEventListener('click', nextTrack);
+// 移动端迷你条
+mPlayBtn&&mPlayBtn.addEventListener('click',togglePlay);
+mPrevBtn&&mPrevBtn.addEventListener('click',prevTrack);
+mNextBtn&&mNextBtn.addEventListener('click',nextTrack);
+mExpandBtn&&mExpandBtn.addEventListener('click',()=>{mFullscreen.classList.add('open')});
 
-// 随机
-shuffleBtn.addEventListener('click', () => {
-  isShuffle = !isShuffle;
-  shuffleBtn.classList.toggle('active', isShuffle);
+// 移动端全屏
+mFsClose&&mFsClose.addEventListener('click',()=>{mFullscreen.classList.remove('open')});
+mFsPlay&&mFsPlay.addEventListener('click',togglePlay);
+mFsPrev&&mFsPrev.addEventListener('click',prevTrack);
+mFsNext&&mFsNext.addEventListener('click',nextTrack);
+mFsShuffle&&mFsShuffle.addEventListener('click',()=>{isShuffle=!isShuffle;updateUI()});
+mFsLoop&&mFsLoop.addEventListener('click',()=>{loopMode=(loopMode+1)%3;audio.loop=(loopMode===2);updateUI()});
+
+// 移动端全屏进度条
+mFsProgressBar&&mFsProgressBar.addEventListener('click',e=>{if(!audio.duration)return;const r=mFsProgressBar.getBoundingClientRect();audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration});
+
+// 移动端音量
+mFsVolSlider&&mFsVolSlider.addEventListener('input',()=>{audio.volume=mFsVolSlider.value/100;prevVolume=audio.volume;updateVolIcon()});
+mFsVolIcon&&mFsVolIcon.addEventListener('click',()=>{if(audio.volume>0){prevVolume=audio.volume;audio.volume=0;mFsVolSlider.value=0}else{audio.volume=prevVolume||0.6;mFsVolSlider.value=audio.volume*100}updateVolIcon()});
+
+// 移动端播放列表按钮
+mPlBtn&&mPlBtn.addEventListener('click',e=>{e.stopPropagation();mPlPanel.classList.toggle('open')});
+
+// audio events
+audio.addEventListener('ended',()=>{if(loopMode===2)return;if(loopMode===1)nextTrack();else setPlayingState(false)});
+audio.addEventListener('error',()=>{setPlayingState(false);setTimeout(()=>{if(PLAYLIST.length>1)loadTrack(currentIndex+1,true)},1000)});
+
+// PC 进度
+audio.addEventListener('timeupdate',()=>{
+  if(!audio.duration)return;
+  const pct=audio.currentTime/audio.duration*100;
+  if(progressFill)progressFill.style.width=pct+'%';
+  if(timeCurrent)timeCurrent.textContent=fmt(audio.currentTime);
+  if(mProgressFill)mProgressFill.style.width=pct+'%';
+  if(mFsProgressFill)mFsProgressFill.style.width=pct+'%';
+  if(mFsTimeCurrent)mFsTimeCurrent.textContent=fmt(audio.currentTime);
+});
+audio.addEventListener('loadedmetadata',()=>{
+  if(timeTotal)timeTotal.textContent=fmt(audio.duration);
+  if(mFsTimeTotal)mFsTimeTotal.textContent=fmt(audio.duration);
+});
+progressWrap&&progressWrap.addEventListener('click',e=>{if(!audio.duration)return;const r=progressWrap.getBoundingClientRect();audio.currentTime=((e.clientX-r.left)/r.width)*audio.duration});
+
+// PC 音量
+volSlider&&volSlider.addEventListener('input',()=>{audio.volume=volSlider.value/100;prevVolume=audio.volume;updateVolIcon()});
+volBtn&&volBtn.addEventListener('click',()=>{if(audio.volume>0){prevVolume=audio.volume;audio.volume=0;volSlider.value=0}else{audio.volume=prevVolume||0.6;volSlider.value=audio.volume*100}updateVolIcon()});
+
+// PC 播放列表
+plToggle&&plToggle.addEventListener('click',e=>{e.stopPropagation();plPanel.classList.toggle('open');plToggle.classList.toggle('active')});
+document.addEventListener('click',e=>{
+  if(plPanel&&!plPanel.contains(e.target)&&!plToggle.contains(e.target)){plPanel.classList.remove('open');plToggle.classList.remove('active')}
+  if(mPlPanel&&!mPlPanel.contains(e.target)&&(!mPlBtn||!mPlBtn.contains(e.target))){mPlPanel.classList.remove('open')}
 });
 
-// 循环
-loopBtn.addEventListener('click', () => {
-  loopMode = (loopMode + 1) % 3;
-  loopBtn.textContent = loopMode === 2 ? '🔂¹' : '🔁';
-  loopBtn.classList.toggle('active', loopMode !== 0);
-  audio.loop = (loopMode === 2);
-});
-
-// 曲目播放结束
-audio.addEventListener('ended', () => {
-  if (loopMode === 2) return; // 单曲循环由 audio.loop 处理
-  if (loopMode === 1) {
-    nextTrack(); // 列表循环 → 自动下一曲
-  } else {
-    setPlayingState(false); // 不循环 → 停止
-  }
-});
-
-// 音频错误
-audio.addEventListener('error', (e) => {
-  console.error('音频加载失败:', e);
-  setPlayingState(false);
-  // 跳到下一首试试
-  setTimeout(() => {
-    if (PLAYLIST.length > 1) {
-      loadTrack(currentIndex + 1, true);
-    }
-  }, 1000);
-});
-
-// 进度更新
-audio.addEventListener('timeupdate', () => {
-  if (!audio.duration) return;
-  progressFill.style.width = (audio.currentTime / audio.duration * 100) + '%';
-  timeCurrent.textContent = fmt(audio.currentTime);
-});
-
-audio.addEventListener('loadedmetadata', () => {
-  timeTotal.textContent = fmt(audio.duration);
-});
-
-// 进度条点击
-progressWrap.addEventListener('click', (e) => {
-  if (!audio.duration) return;
-  const rect = progressWrap.getBoundingClientRect();
-  audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
-});
-
-// 音量
-volSlider.addEventListener('input', () => {
-  audio.volume = volSlider.value / 100;
-  prevVolume = audio.volume;
-  updateVolIcon();
-});
-
-volBtn.addEventListener('click', () => {
-  if (audio.volume > 0) {
-    prevVolume = audio.volume;
-    audio.volume = 0;
-    volSlider.value = 0;
-  } else {
-    audio.volume = prevVolume || 0.6;
-    volSlider.value = audio.volume * 100;
-  }
-  updateVolIcon();
-});
-
-// 播放列表面板
-plToggle.addEventListener('click', (e) => {
-  e.stopPropagation();
-  plPanel.classList.toggle('open');
-  plToggle.classList.toggle('active');
-});
-
-// 点击外部关闭播放列表
-document.addEventListener('click', (e) => {
-  if (!plPanel.contains(e.target) && !plToggle.contains(e.target)) {
-    plPanel.classList.remove('open');
-    plToggle.classList.remove('active');
+// 键盘
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+  switch(e.code){
+    case'Space':e.preventDefault();togglePlay();break;
+    case'ArrowLeft':if(audio.duration)audio.currentTime=Math.max(0,audio.currentTime-5);break;
+    case'ArrowRight':if(audio.duration)audio.currentTime=Math.min(audio.duration,audio.currentTime+5);break;
+    case'ArrowUp':e.preventDefault();audio.volume=Math.min(1,audio.volume+0.1);if(volSlider)volSlider.value=audio.volume*100;if(mFsVolSlider)mFsVolSlider.value=audio.volume*100;updateVolIcon();break;
+    case'ArrowDown':e.preventDefault();audio.volume=Math.max(0,audio.volume-0.1);if(volSlider)volSlider.value=audio.volume*100;if(mFsVolSlider)mFsVolSlider.value=audio.volume*100;updateVolIcon();break;
   }
 });
 
 // ============================================================
-//  构建播放列表 DOM
+//  构建播放列表
 // ============================================================
-function buildPlaylist() {
-  plList.innerHTML = '';
-  plCount.textContent = PLAYLIST.length + ' 首';
-  PLAYLIST.forEach((t, i) => {
-    const item = document.createElement('div');
-    item.className = 'pl-item' + (i === currentIndex ? ' active' : '');
-    item.innerHTML =
-      '<div class="pl-item-num">' +
-        '<span class="pl-item-num-text">' + (i + 1) + '</span>' +
-        '<div class="pl-item-eq"><span></span><span></span><span></span></div>' +
-      '</div>' +
-      '<div class="pl-item-info">' +
-        '<div class="pl-item-title">' + t.title + '</div>' +
-        '<div class="pl-item-artist">' + t.artist + '</div>' +
-      '</div>';
-    item.addEventListener('click', function() {
-      userHasInteracted = true;
-      loadTrack(i, true);
-      plPanel.classList.remove('open');
-      plToggle.classList.remove('active');
+function buildPlaylist(){
+  [plList,mPlList].forEach(list=>{
+    if(!list)return;
+    list.innerHTML='';
+    PLAYLIST.forEach((t,i)=>{
+      const item=document.createElement('div');
+      item.className=(list===mPlList?'m-pl-item':'pl-item')+(i===currentIndex?' active':'');
+      item.style.cssText='display:flex;align-items:center;gap:0.7rem;padding:0.6rem 1.2rem;cursor:pointer;transition:all 0.2s ease;position:relative';
+      item.innerHTML='<div class="pl-item-num"><span class="pl-item-num-text">'+(i+1)+'</span><div class="pl-item-eq"><span></span><span></span><span></span></div></div><div class="pl-item-info"><div class="pl-item-title" style="font-size:0.78rem;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+t.title+'</div><div class="pl-item-artist" style="font-size:0.62rem;color:var(--text-dim)">'+t.artist+'</div></div>';
+      item.addEventListener('click',()=>{userInteracted=true;loadTrack(i,true);plPanel&&plPanel.classList.remove('open');plToggle&&plToggle.classList.remove('active');mPlPanel&&mPlPanel.classList.remove('open')});
+      list.appendChild(item);
     });
-    plList.appendChild(item);
   });
+  if(plCount)plCount.textContent=PLAYLIST.length+' 首';
+  if(mPlCount)mPlCount.textContent=PLAYLIST.length+' 首';
 }
 buildPlaylist();
 
 // ============================================================
-//  键盘快捷键
+//  启动遮罩
 // ============================================================
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  switch (e.code) {
-    case 'Space':
-      e.preventDefault();
-      togglePlay();
-      break;
-    case 'ArrowLeft':
-      if (audio.duration) audio.currentTime = Math.max(0, audio.currentTime - 5);
-      break;
-    case 'ArrowRight':
-      if (audio.duration) audio.currentTime = Math.min(audio.duration, audio.currentTime + 5);
-      break;
-    case 'ArrowUp':
-      e.preventDefault();
-      audio.volume = Math.min(1, audio.volume + 0.1);
-      volSlider.value = audio.volume * 100;
-      updateVolIcon();
-      break;
-    case 'ArrowDown':
-      e.preventDefault();
-      audio.volume = Math.max(0, audio.volume - 0.1);
-      volSlider.value = audio.volume * 100;
-      updateVolIcon();
-      break;
-  }
-});
-
-// ============================================================
-//  启动遮罩 —— 用户第一次交互，解除自动播放限制
-// ============================================================
-overlay.addEventListener('click', () => {
-  userHasInteracted = true;
-  bar.classList.add('visible');
+overlay.addEventListener('click',()=>{
+  userInteracted=true;
+  if(isMobile){mBar.classList.add('visible')}
+  else{musicBar.classList.add('visible')}
   overlay.classList.add('hidden');
-  loadTrack(0, true);
+  loadTrack(0,true);
 });
 
 // ============================================================
-//  SAKURA CANVAS
+//  SAKURA
 // ============================================================
-(function() {
-  const canvas = document.getElementById('sakura-canvas');
-  const ctx = canvas.getContext('2d');
-  let petals = [], w, h;
-  function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
-  resize(); window.addEventListener('resize', resize);
-  class Petal {
-    constructor() { this.reset(); this.y = Math.random() * h; }
-    reset() {
-      this.x = Math.random() * w; this.y = -20;
-      this.size = Math.random() * 8 + 4;
-      this.speedY = Math.random() * 1.2 + 0.4;
-      this.speedX = Math.random() * 0.8 - 0.4;
-      this.rotation = Math.random() * Math.PI * 2;
-      this.rotSpeed = (Math.random() - 0.5) * 0.03;
-      this.opacity = Math.random() * 0.5 + 0.2;
-      this.swaySpeed = Math.random() * 0.02 + 0.005;
-      this.swayOffset = Math.random() * Math.PI * 2;
-      this.life = 0;
-      const r = 232 + Math.floor(Math.random() * 23);
-      const g = 160 + Math.floor(Math.random() * 60);
-      const b = 180 + Math.floor(Math.random() * 40);
-      this.color = r + ',' + g + ',' + b;
-    }
-    update() {
-      this.life++; this.y += this.speedY;
-      this.x += this.speedX + Math.sin(this.life * this.swaySpeed + this.swayOffset) * 0.5;
-      this.rotation += this.rotSpeed;
-      if (this.y > h + 20) this.reset();
-    }
-    draw() {
-      ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rotation); ctx.globalAlpha = this.opacity;
-      ctx.beginPath(); ctx.moveTo(0, 0);
-      ctx.bezierCurveTo(this.size*.5,-this.size*.4,this.size,-this.size*.2,this.size*.8,this.size*.1);
-      ctx.bezierCurveTo(this.size*.5,this.size*.3,this.size*.2,this.size*.2,0,0);
-      ctx.fillStyle = 'rgba(' + this.color + ',' + this.opacity + ')';
-      ctx.fill(); ctx.restore();
-    }
-  }
-  for (let i = 0; i < Math.min(60, Math.floor(window.innerWidth / 25)); i++) petals.push(new Petal());
-  (function animate() { ctx.clearRect(0,0,w,h); petals.forEach(p=>{p.update();p.draw()}); requestAnimationFrame(animate); })();
-})();
+(function(){const c=document.getElementById('sakura-canvas'),x=c.getContext('2d');let ps=[],w,h;function r(){w=c.width=window.innerWidth;h=c.height=window.innerHeight}r();window.addEventListener('resize',r);class P{constructor(){this.reset();this.y=Math.random()*h}reset(){this.x=Math.random()*w;this.y=-20;this.sz=Math.random()*8+4;this.sy=Math.random()*1.2+0.4;this.sx=Math.random()*0.8-0.4;this.rt=Math.random()*Math.PI*2;this.rs=(Math.random()-0.5)*0.03;this.op=Math.random()*0.5+0.2;this.ss=Math.random()*0.02+0.005;this.so=Math.random()*Math.PI*2;this.l=0;const r=232+Math.floor(Math.random()*23),g=160+Math.floor(Math.random()*60),b=180+Math.floor(Math.random()*40);this.c=r+','+g+','+b}update(){this.l++;this.y+=this.sy;this.x+=this.sx+Math.sin(this.l*this.ss+this.so)*0.5;this.rt+=this.rs;if(this.y>h+20)this.reset()}draw(){x.save();x.translate(this.x,this.y);x.rotate(this.rt);x.globalAlpha=this.op;x.beginPath();x.moveTo(0,0);x.bezierCurveTo(this.sz*.5,-this.sz*.4,this.sz,-this.sz*.2,this.sz*.8,this.sz*.1);x.bezierCurveTo(this.sz*.5,this.sz*.3,this.sz*.2,this.sz*.2,0,0);x.fillStyle='rgba('+this.c+','+this.op+')';x.fill();x.restore()}}for(let i=0;i<Math.min(60,Math.floor(window.innerWidth/25));i++)ps.push(new P);(function a(){x.clearRect(0,0,w,h);ps.forEach(p=>{p.update();p.draw()});requestAnimationFrame(a)})()})();
 
 // ============================================================
 //  SCROLL ANIMATIONS
 // ============================================================
-const obs = new IntersectionObserver(es => es.forEach(e => {
-  if (e.isIntersecting) e.target.classList.add('visible');
-}), { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
-document.querySelectorAll('.chapter-header,.divider,.divider-line,.char-card,.confession,.verdict-box,.ending-title,.ending-sub,.toc-item').forEach(el => obs.observe(el));
+const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')}),{threshold:0.15,rootMargin:'0px 0px -50px 0px'});
+document.querySelectorAll('.chapter-header,.divider,.divider-line,.char-card,.confession,.verdict-box,.ending-title,.ending-sub,.toc-item').forEach(el=>obs.observe(el));
+const paraObs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.querySelectorAll('p').forEach((p,i)=>setTimeout(()=>p.classList.add('visible'),i*80))}),{threshold:0.1});
+document.querySelectorAll('.chapter-body').forEach(el=>paraObs.observe(el));
 
-const paraObs = new IntersectionObserver(es => es.forEach(e => {
-  if (e.isIntersecting) e.target.querySelectorAll('p').forEach((p, i) => setTimeout(() => p.classList.add('visible'), i * 80));
-}), { threshold: 0.1 });
-document.querySelectorAll('.chapter-body').forEach(el => paraObs.observe(el));
-
-const nav = document.getElementById('chapterNav');
-const heroEl = document.getElementById('hero');
-window.addEventListener('scroll', () => {
-  nav.classList.toggle('visible', heroEl.getBoundingClientRect().bottom < 0);
-  const ss = document.querySelectorAll('section[id]');
-  let cur = '';
-  ss.forEach(s => { if (window.scrollY >= s.offsetTop - 200) cur = s.id; });
-  nav.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.getAttribute('href') === '#' + cur));
+const nav=document.getElementById('chapterNav');
+const heroEl=document.getElementById('hero');
+window.addEventListener('scroll',()=>{
+  if(nav)nav.classList.toggle('visible',heroEl.getBoundingClientRect().bottom<0);
+  const ss=document.querySelectorAll('section[id]');let cur='';
+  ss.forEach(s=>{if(window.scrollY>=s.offsetTop-200)cur=s.id});
+  if(nav)nav.querySelectorAll('a').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
 });
-
-window.addEventListener('scroll', () => {
-  const s = window.scrollY;
-  if (s < window.innerHeight) {
-    heroEl.style.transform = 'translateY(' + (s * 0.3) + 'px)';
-    heroEl.style.opacity = 1 - (s / window.innerHeight) * 0.8;
-  }
+window.addEventListener('scroll',()=>{
+  const s=window.scrollY;
+  if(s<window.innerHeight){heroEl.style.transform='translateY('+(s*0.3)+'px)';heroEl.style.opacity=1-(s/window.innerHeight)*0.8}
 });
-
-document.querySelectorAll('.toc-item').forEach(item => {
-  item.addEventListener('click', e => {
-    e.preventDefault();
-    const t = document.querySelector(item.getAttribute('href'));
-    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-});
+document.querySelectorAll('.toc-item').forEach(item=>{item.addEventListener('click',e=>{e.preventDefault();const t=document.querySelector(item.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth',block:'start'})})});
 </script>
 </body>
 </html>
