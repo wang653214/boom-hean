@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青春恋爱喜剧 · 甜蜜暴击</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;600;700&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fdf6f0;
+    --surface: #fff8f2;
+    --accent: #ff6b8a;
+    --accent-deep: #e84572;
+    --accent-soft: #ffd4df;
+    --gold: #f0a830;
+    --sky: #7ec8e3;
+    --text-primary: #3d2c2c;
+    --text-muted: #8a7070;
+    --text-light: #b89a9a;
+    --cherry: #ffb7c5;
+    --shadow: rgba(255, 107, 138, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Noto Serif SC', serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ===== 樱花粒子 ===== */
+  .sakura-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+  }
+
+  .petal {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: var(--cherry);
+    border-radius: 50% 0 50% 50%;
+    opacity: 0;
+    animation: fall linear infinite;
+    filter: blur(0.5px);
+  }
+
+  .petal:nth-child(odd) { background: #ffd4df; }
+  .petal:nth-child(3n) { background: #ffe0e8; width: 8px; height: 8px; }
+  .petal:nth-child(5n) { background: #ffb0c0; width: 15px; height: 15px; }
+
+  @keyframes fall {
+    0%   { opacity: 0; transform: translateX(0) translateY(-20px) rotate(0deg); }
+    10%  { opacity: 0.8; }
+    90%  { opacity: 0.6; }
+    100% { opacity: 0; transform: translateX(100px) translateY(100vh) rotate(720deg); }
+  }
+
+  /* ===== 纹理叠加 ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== 音乐控制模块（含音量） ===== */
+  .music-control {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .music-panel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(14px);
+    border: 1.5px solid rgba(255, 107, 138, 0.18);
+    border-radius: 40px;
+    padding: 8px 16px 8px 8px;
+    box-shadow: 0 4px 24px rgba(255, 107, 138, 0.1);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .music-panel:hover {
+    box-shadow: 0 6px 32px rgba(255, 107, 138, 0.18);
+    border-color: rgba(255, 107, 138, 0.3);
+  }
+
+  /* 播放按钮 */
+  .music-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .music-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 3px 16px rgba(255, 107, 138, 0.35);
+  }
+
+  .music-btn.playing {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 2px 12px rgba(255, 107, 138, 0.3); }
+    50% { box-shadow: 0 2px 24px rgba(255, 107, 138, 0.5); }
+  }
+
+  /* 播放/暂停图标 */
+  .play-icon, .pause-icon {
+    position: absolute;
+    transition: all 0.3s ease;
+  }
+
+  .play-icon {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .pause-icon {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  .music-btn.playing .play-icon {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  .music-btn.playing .pause-icon {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .music-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: white;
+  }
+
+  /* 分隔线 */
+  .volume-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 107, 138, 0.2);
+    flex-shrink: 0;
+  }
+
+  /* 音量图标 */
+  .volume-icon-wrap {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+  }
+
+  .volume-icon-wrap:hover {
+    background: var(--accent-soft);
+  }
+
+  .volume-icon-wrap svg {
+    width: 18px;
+    height: 18px;
+    fill: var(--accent);
+    transition: fill 0.2s;
+  }
+
+  .volume-icon-wrap.muted svg {
+    fill: var(--text-light);
+  }
+
+  /* 音量滑块容器 */
+  .volume-slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 0;
+    overflow: hidden;
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .music-panel:hover .volume-slider-wrap,
+  .music-panel.expanded .volume-slider-wrap {
+    width: 110px;
+  }
+
+  /* 音量滑块 */
+  .volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 4px;
+    background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--volume, 70%), #f0e0e3 var(--volume, 70%), #f0e0e3 100%);
+    outline: none;
+    cursor: pointer;
+    transition: height 0.2s;
+  }
+
+  .volume-slider:hover {
+    height: 6px;
+  }
+
+  .volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 2.5px solid var(--accent);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255, 107, 138, 0.25);
+    transition: all 0.2s ease;
+  }
+
+  .volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 2px 12px rgba(255, 107, 138, 0.4);
+  }
+
+  .volume-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 2.5px solid var(--accent);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255, 107, 138, 0.25);
+  }
+
+  /* 音量百分比 */
+  .volume-value {
+    font-family: 'DM Mono', 'ZCOOL XiaoWei', monospace;
+    font-size: 11px;
+    color: var(--text-light);
+    min-width: 28px;
+    text-align: right;
+    flex-shrink: 0;
+    user-select: none;
+  }
+
+  /* 歌曲名 */
+  .music-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .music-song {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 12px;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
+    transition: max-width 0.4s ease 0.1s;
+  }
+
+  .music-panel:hover .music-song {
+    max-width: 140px;
+  }
+
+  .music-artist {
+    font-size: 10px;
+    color: var(--text-light);
+    white-space: nowrap;
+  }
+
+  /* ===== 主视觉头部 ===== */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 60px 24px;
+    background:
+      radial-gradient(ellipse at 20% 80%, rgba(255, 183, 197, 0.25) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 20%, rgba(126, 200, 227, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(255, 212, 223, 0.1) 0%, transparent 60%),
+      var(--bg);
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 120px;
+    background: linear-gradient(to bottom, transparent, var(--bg));
+    z-index: 2;
+  }
+
+  .hero-deco {
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.04;
+    font-family: 'Ma Shan Zheng', cursive;
+    color: var(--accent);
+    user-select: none;
+  }
+
+  .hero-deco.left { top: 10%; left: -5%; transform: rotate(-15deg); }
+  .hero-deco.right { bottom: 15%; right: -3%; transform: rotate(10deg); }
+
+  .novel-badge {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 13px;
+    letter-spacing: 6px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    padding: 8px 24px;
+    border: 1px solid var(--accent-soft);
+    border-radius: 30px;
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(8px);
+    animation: fadeDown 0.8s ease both;
+    position: relative;
+    z-index: 3;
+  }
+
+  .novel-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: clamp(3.5rem, 8vw, 7rem);
+    color: var(--text-primary);
+    line-height: 1.2;
+    margin-bottom: 16px;
+    animation: fadeUp 1s ease 0.2s both;
+    position: relative;
+    z-index: 3;
+  }
+
+  .novel-title .highlight {
+    color: var(--accent);
+    position: relative;
+    display: inline-block;
+  }
+
+  .novel-title .highlight::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    left: -4px;
+    right: -4px;
+    height: 12px;
+    background: var(--accent-soft);
+    border-radius: 6px;
+    z-index: -1;
+    opacity: 0.6;
+  }
+
+  .novel-subtitle {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: clamp(1rem, 2.5vw, 1.4rem);
+    color: var(--text-muted);
+    margin-bottom: 40px;
+    animation: fadeUp 1s ease 0.4s both;
+    position: relative;
+    z-index: 3;
+    max-width: 600px;
+    line-height: 1.8;
+  }
+
+  .novel-meta {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 1s ease 0.6s both;
+    position: relative;
+    z-index: 3;
+  }
+
+  .meta-item {
+    font-size: 13px;
+    color: var(--text-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .meta-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-soft);
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    animation: fadeUp 1s ease 1s both;
+  }
+
+  .scroll-hint span {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 12px;
+    color: var(--text-light);
+    letter-spacing: 3px;
+  }
+
+  .scroll-arrow {
+    width: 20px;
+    height: 20px;
+    border-right: 2px solid var(--text-light);
+    border-bottom: 2px solid var(--text-light);
+    transform: rotate(45deg);
+    animation: scroll-bounce 2s ease infinite;
+  }
+
+  @keyframes scroll-bounce {
+    0%, 100% { transform: rotate(45deg) translateY(0); opacity: 0.4; }
+    50% { transform: rotate(45deg) translateY(8px); opacity: 1; }
+  }
+
+  /* ===== 章节导航 ===== */
+  .chapter-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(253, 246, 240, 0.9);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(255, 107, 138, 0.1);
+    padding: 0 24px;
+    transition: box-shadow 0.3s;
+  }
+
+  .chapter-nav.scrolled {
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+  }
+
+  .chapter-nav-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+  }
+
+  .chapter-nav-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 20px;
+    color: var(--accent);
+  }
+
+  .chapter-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .chapter-tabs::-webkit-scrollbar { display: none; }
+
+  .chapter-tab {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.3s ease;
+    border: none;
+    background: transparent;
+  }
+
+  .chapter-tab:hover {
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .chapter-tab.active {
+    color: white;
+    background: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ===== 小说正文 ===== */
+  .novel-content {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 80px 24px 120px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .chapter-section {
+    margin-bottom: 100px;
+    opacity: 0;
+    transform: translateY(40px);
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .chapter-section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .chapter-header {
+    text-align: center;
+    margin-bottom: 48px;
+    position: relative;
+  }
+
+  .chapter-number {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 14px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    margin-bottom: 12px;
+  }
+
+  .chapter-name {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    color: var(--text-primary);
+    line-height: 1.4;
+  }
+
+  .chapter-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .chapter-divider::before,
+  .chapter-divider::after {
+    content: '';
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--accent-soft), transparent);
+  }
+
+  .chapter-divider-icon {
+    font-size: 14px;
+    color: var(--accent);
+  }
+
+  .story-text {
+    font-size: 17px;
+    line-height: 2;
+    color: var(--text-primary);
+    text-align: justify;
+    margin-bottom: 24px;
+    text-indent: 2em;
+  }
+
+  .story-text.first-para::first-letter {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 3.2em;
+    float: left;
+    line-height: 1;
+    margin-right: 8px;
+    margin-top: 4px;
+    color: var(--accent);
+  }
+
+  /* ===== 对话气泡 ===== */
+  .dialogue {
+    margin: 28px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .dialogue-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: dialogueIn 0.5s ease both;
+  }
+
+  .dialogue-line:nth-child(2) { animation-delay: 0.1s; }
+  .dialogue-line:nth-child(3) { animation-delay: 0.2s; }
+
+  .dialogue-line.right {
+    flex-direction: row-reverse;
+    text-align: right;
+  }
+
+  @keyframes dialogueIn {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .dialogue-line.right { animation-name: dialogueInRight; }
+
+  @keyframes dialogueInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .char-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .char-avatar.male { background: linear-gradient(135deg, #7ec8e3, #5ba8c8); }
+  .char-avatar.female { background: linear-gradient(135deg, #ffb7c5, #ff8fa3); }
+
+  .dialogue-bubble {
+    background: white;
+    padding: 14px 20px;
+    border-radius: 18px;
+    font-size: 15px;
+    line-height: 1.7;
+    max-width: 75%;
+    position: relative;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  .dialogue-line:not(.right) .dialogue-bubble { border-bottom-left-radius: 4px; }
+
+  .dialogue-line.right .dialogue-bubble {
+    border-bottom-right-radius: 4px;
+    background: linear-gradient(135deg, #fff0f3, #ffe8ee);
+  }
+
+  .dialogue-name {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 12px;
+    color: var(--text-light);
+    margin-bottom: 4px;
+  }
+
+  /* ===== 心情标注 ===== */
+  .mood-note {
+    text-align: center;
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 14px;
+    color: var(--text-light);
+    margin: 32px 0;
+    padding: 16px;
+    border-top: 1px dashed var(--accent-soft);
+    border-bottom: 1px dashed var(--accent-soft);
+    font-style: italic;
+  }
+
+  /* ===== 独白 ===== */
+  .inner-thought {
+    background: linear-gradient(135deg, rgba(255, 212, 223, 0.2), rgba(126, 200, 227, 0.1));
+    border-left: 3px solid var(--accent-soft);
+    padding: 20px 24px;
+    margin: 28px 0;
+    border-radius: 0 12px 12px 0;
+    font-size: 15px;
+    line-height: 1.9;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  .inner-thought::before {
+    content: '💭';
+    display: block;
+    margin-bottom: 8px;
+    font-size: 18px;
+    font-style: normal;
+  }
+
+  /* ===== 场景切换 ===== */
+  .scene-break {
+    text-align: center;
+    margin: 48px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  .scene-break::before,
+  .scene-break::after {
+    content: '';
+    flex: 1;
+    max-width: 100px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--accent-soft));
+  }
+
+  .scene-break::after {
+    background: linear-gradient(to left, transparent, var(--accent-soft));
+  }
+
+  .scene-break span {
+    font-size: 10px;
+    color: var(--text-light);
+    letter-spacing: 6px;
+  }
+
+  /* ===== 尾页 ===== */
+  .ending-section {
+    text-align: center;
+    padding: 80px 24px;
+    position: relative;
+    z-index: 2;
+  }
+
+  .ending-text {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  .ending-sub {
+    font-family: 'ZCOOL XiaoWei', serif;
+    font-size: 14px;
+    color: var(--text-light);
+    letter-spacing: 3px;
+  }
+
+  .ending-hearts {
+    margin-top: 40px;
+    font-size: 28px;
+    letter-spacing: 8px;
+    animation: heartbeat 1.5s ease-in-out infinite;
+  }
+
+  @keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.15); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.1); }
+  }
+
+  /* ===== 阅读进度条 ===== */
+  .reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(to right, var(--accent), var(--gold));
+    z-index: 10000;
+    transition: width 0.1s linear;
+    border-radius: 0 2px 2px 0;
+  }
+
+  /* ===== 回到顶部 ===== */
+  .back-top {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--accent-soft);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  .back-top.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .back-top:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .back-top svg {
+    width: 20px;
+    height: 20px;
+    fill: var(--accent);
+    transition: fill 0.3s;
+  }
+
+  .back-top:hover svg { fill: white; }
+
+  /* ===== 动画 ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 600px) {
+    .novel-content { padding: 48px 18px 80px; }
+    .story-text { font-size: 15px; line-height: 1.9; }
+    .dialogue-bubble { max-width: 85%; font-size: 14px; }
+    .music-control { top: 12px; right: 12px; }
+    .music-panel { padding: 6px 12px 6px 6px; gap: 6px; }
+    .music-btn { width: 36px; height: 36px; }
+    .music-btn svg { width: 14px; height: 14px; }
+    .music-panel:hover .volume-slider-wrap,
+    .music-panel.expanded .volume-slider-wrap { width: 80px; }
+    .volume-slider { width: 80px; }
+    .chapter-tabs { gap: 0; }
+    .chapter-tab { padding: 6px 10px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 阅读进度条 -->
+<div class="reading-progress" id="readingProgress"></div>
+
+<!-- 樱花粒子 -->
+<div class="sakura-container" id="sakuraContainer"></div>
+
+<!-- 背景音乐 -->
+<audio id="bgMusic" loop preload="auto">
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<!-- 音乐控制模块 -->
+<div class="music-control">
+  <div class="music-panel" id="musicPanel">
+
+    <!-- 播放/暂停按钮 -->
+    <button class="music-btn" id="musicBtn" onclick="toggleMusic()" title="播放/暂停">
+      <svg class="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+    </button>
+
+    <!-- 分隔线 -->
+    <div class="volume-divider"></div>
+
+    <!-- 音量图标（点击静音） -->
+    <div class="volume-icon-wrap" id="volumeIconWrap" onclick="toggleMute()" title="静音/取消静音">
+      <svg id="volumeIcon" viewBox="0 0 24 24">
+        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+      </svg>
+    </div>
+
+    <!-- 音量滑块 -->
+    <div class="volume-slider-wrap">
+      <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="70" oninput="changeVolume(this.value)">
+      <span class="volume-value" id="volumeValue">70%</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- 主视觉 -->
+<section class="hero">
+  <div class="hero-deco left">恋</div>
+  <div class="hero-deco right">爱</div>
+  <div class="novel-badge">青 春 恋 爱 喜 剧</div>
+  <h1 class="novel-title">
+    甜蜜<span class="highlight">暴击</span>
+  </h1>
+  <p class="novel-subtitle">
+    「如果心跳可以被听见，那每次遇见你的时候，<br>我的世界大概已经是一场交响乐了。」
+  </p>
+  <div class="novel-meta">
+    <div class="meta-item"><div class="meta-dot"></div>青春校园</div>
+    <div class="meta-item"><div class="meta-dot"></div>恋爱喜剧</div>
+    <div class="meta-item"><div class="meta-dot"></div>甜蜜日常</div>
+    <div class="meta-item"><div class="meta-dot"></div>连载中</div>
+  </div>
+  <div class="scroll-hint">
+    <span>开始阅读</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- 章节导航 -->
+<nav class="chapter-nav" id="chapterNav">
+  <div class="chapter-nav-inner">
+    <div class="chapter-nav-title">甜蜜暴击</div>
+    <div class="chapter-tabs">
+      <button class="chapter-tab active" onclick="scrollToChapter(0)">第一章</button>
+      <button class="chapter-tab" onclick="scrollToChapter(1)">第二章</button>
+      <button class="chapter-tab" onclick="scrollToChapter(2)">第三章</button>
+    </div>
+  </div>
+</nav>
+
+<!-- 小说正文 -->
+<main class="novel-content">
+
+  <!-- 第一章 -->
+  <section class="chapter-section" id="ch1">
+    <div class="chapter-header">
+      <div class="chapter-number">第一章</div>
+      <h2 class="chapter-name">开学第一天的灾难</h2>
+      <div class="chapter-divider"><span class="chapter-divider-icon">❀</span></div>
+    </div>
+
+    <p class="story-text first-para">
+      九月的阳光像被蜂蜜浸泡过一样，黏糊糊地铺满了整个校园。林夏站在高二（3）班的教室门口，深吸一口气，试图平复自己那颗即将跳出嗓子眼的心脏。
+    </p>
+
+    <p class="story-text">
+      新学期，新气象，新——她的目光扫过教室，突然定格在靠窗第三排的位置上。那里坐着一个少年，阳光透过窗帘的缝隙，在他的侧脸上镀了一层薄薄的金边。他正单手撑着下巴，百无聊赖地翻着一本封面已经卷边的漫画书。
+    </p>
+
+    <div class="inner-thought">
+      等等……那个人……不是暑假在图书馆把咖啡洒在我新买的白裙子上，然后说了句"哦，原来裙子会吸水"就走掉的那个混蛋吗？！
+    </div>
+
+    <p class="story-text">
+      林夏的瞳孔地震了。她攥紧书包带，咬牙切齿地走向自己的座位——很好，就在那个混蛋的正后方。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">哟，裙子小姐。</div>
+        </div>
+      </div>
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏</div>
+          <div class="dialogue-bubble">……你认错人了。</div>
+        </div>
+      </div>
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">不会认错的，那天你瞪我的眼神，就像现在这样。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="story-text">
+      林夏气得差点把桌子掀了。但老师已经走进教室，她只能恶狠狠地瞪了那个后脑勺一眼，在心里默默记下第一笔账。
+    </p>
+
+    <div class="mood-note">
+      —— 命运的齿轮开始转动，虽然它现在更像是一个搅蛋器 ——
+    </div>
+
+    <p class="story-text">
+      开学典礼在操场上举行，九月的太阳毫不留情地炙烤着每一个青春的脑门。林夏站在队列里，感觉自己快要融化成一滩草莓冰淇淋。
+    </p>
+
+    <p class="story-text">
+      就在她摇摇欲坠的时候，身后突然递来一瓶冰水。瓶身上的水珠凉凉地蹭过她的指尖。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">别晕倒啊，裙子小姐。你要是倒了，我还得负责把你扛去医务室，很累的。</div>
+        </div>
+      </div>
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏</div>
+          <div class="dialogue-bubble">……谢谢。但是你再叫我"裙子小姐"，我就把这瓶水倒在你头上。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="story-text">
+      顾屿舟笑了起来。他的笑容很好看，眼睛弯成两道月牙，露出一颗小小的虎牙。阳光落在他身上，连空气中的尘埃都变成了金色的碎屑。
+    </p>
+
+    <div class="inner-thought">
+      不行，不能被笑容迷惑。记住，这个人是仇人。仇人！林夏在心里给自己疯狂打补丁。
+    </div>
+  </section>
+
+  <!-- 第二章 -->
+  <section class="chapter-section" id="ch2">
+    <div class="chapter-header">
+      <div class="chapter-number">第二章</div>
+      <h2 class="chapter-name">天台上的秘密</h2>
+      <div class="chapter-divider"><span class="chapter-divider-icon">✿</span></div>
+    </div>
+
+    <p class="story-text first-para">
+      事情的转折发生在第二个星期三。
+    </p>
+
+    <p class="story-text">
+      林夏有个不为人知的小秘密——她喜欢在午休时间偷偷溜到天台上去写日记。天台上视野开阔，能看到远处的城市天际线和学校后面那片被遗忘的小花园。风很轻，云很低，整个世界都安静得像被按了暂停键。
+    </p>
+
+    <p class="story-text">
+      然而这一天，她的秘密基地被人占领了。
+    </p>
+
+    <p class="story-text">
+      顾屿舟靠在天台的栏杆上，手里拿着一罐草莓牛奶，正仰头看着天空发呆。听到脚步声，他偏过头来，微微挑了挑眉。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">你也来这里？</div>
+        </div>
+      </div>
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏</div>
+          <div class="dialogue-bubble">这是我的秘密基地！你才是入侵者！</div>
+        </div>
+      </div>
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">巧了，我来这里已经一年半了。按先来后到的规矩，你才是入侵者。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="story-text">
+      两个人大眼瞪小眼地对峙了三秒钟，然后同时别过头去——"哼。"
+    </p>
+
+    <div class="scene-break"><span>· · ·</span></div>
+
+    <p class="story-text">
+      但不知怎么的，从那天起，他们开始默契地共享这个天台。林夏坐在左边写日记，顾屿舟靠在右边喝草莓牛奶。两个人谁也不搭理谁，却谁也没有换地方。
+    </p>
+
+    <p class="story-text">
+      直到有一天，林夏写日记的时候不小心写出了声。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏（自言自语）</div>
+          <div class="dialogue-bubble">今天的数学课又睡着了……梦到自己变成了一道函数题，怎么解都解不开……</div>
+        </div>
+      </div>
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">……噗。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="story-text">
+      林夏的耳朵"唰"地红了。她猛地合上日记本，瞪向那个笑得肩膀发抖的家伙。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏</div>
+          <div class="dialogue-bubble">你偷听！！</div>
+        </div>
+      </div>
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">你自己说出来的啊。而且，变成函数题这种事……确实挺好笑的。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="inner-thought">
+      他笑起来的时候，虎牙会露出来。阳光会落在他的睫毛上。风会刚好吹过他的头发。这一切都太犯规了。——林夏的日记本里，第一次出现了关于顾屿舟的句子，虽然旁边画了一个大大的"讨厌鬼"。
+    </div>
+  </section>
+
+  <!-- 第三章 -->
+  <section class="chapter-section" id="ch3">
+    <div class="chapter-header">
+      <div class="chapter-number">第三章</div>
+      <h2 class="chapter-name">文化祭的意外</h2>
+      <div class="chapter-divider"><span class="chapter-divider-icon">♡</span></div>
+    </div>
+
+    <p class="story-text first-para">
+      十月的文化祭是学校最盛大的活动。每个班级都要出一个节目或摊位，而高二（3）班的决定是——鬼屋。
+    </p>
+
+    <p class="story-text">
+      作为班上为数不多愿意在放学后留下来布置的人，林夏被光荣地（被迫地）任命为"鬼屋女主角"。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">听说你是鬼屋的女主角？</div>
+        </div>
+      </div>
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏</div>
+          <div class="dialogue-bubble">……你怎么知道的？</div>
+        </div>
+      </div>
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟</div>
+          <div class="dialogue-bubble">因为我是男主角。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="story-text">
+      林夏感觉天塌了。
+    </p>
+
+    <div class="inner-thought">
+      鬼屋的剧本是什么来着？好像是……被困在废弃洋馆里的两个学生？也就是说，我要和这个人在黑暗的房间里待一整天？？？我的高中生活是不是出了什么bug？？
+    </div>
+
+    <p class="story-text">
+      文化祭当天，鬼屋的布置出乎意料地成功。学长们做的道具逼真到连林夏自己都被吓了一跳。她穿着白色连衣裙坐在"废弃洋馆"的角落里，负责在游客经过时突然出现。
+    </p>
+
+    <p class="story-text">
+      然而意外发生了——停电了。
+    </p>
+
+    <p class="story-text">
+      整个鬼屋瞬间陷入一片漆黑。游客们的尖叫声此起彼伏，脚步声混乱地涌向出口。林夏被人群推搡着，脚下一个趔趄，撞进了一个温暖的怀抱里。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟（声音很近）</div>
+          <div class="dialogue-bubble">……是我。别动。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="story-text">
+      黑暗中，她能感受到他手臂的力量和心跳的节奏。他的下巴轻轻抵在她的头顶，呼吸温热而平稳。空气中弥漫着草莓牛奶的淡淡甜味。
+    </p>
+
+    <div class="dialogue">
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏（声音很小）</div>
+          <div class="dialogue-bubble">……你的心跳好快。</div>
+        </div>
+      </div>
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟（沉默片刻）</div>
+          <div class="dialogue-bubble">……那是因为停电了。我怕黑。</div>
+        </div>
+      </div>
+      <div class="dialogue-line right">
+        <div class="char-avatar female">林</div>
+        <div>
+          <div class="dialogue-name">林夏</div>
+          <div class="dialogue-bubble">骗人。你刚才明明很镇定。</div>
+        </div>
+      </div>
+      <div class="dialogue-line">
+        <div class="char-avatar male">顾</div>
+        <div>
+          <div class="dialogue-name">顾屿舟（声音更轻了）</div>
+          <div class="dialogue-bubble">……好吧。那可能不是因为怕黑。</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="story-text">
+      灯亮了。
+    </p>
+
+    <p class="story-text">
+      林夏抬头，正对上顾屿舟的目光。他的耳朵尖红红的，眼神闪躲，嘴角却挂着一抹不太自然的笑。
+    </p>
+
+    <p class="story-text">
+      两个人像被烫到一样同时弹开。
+    </p>
+
+    <div class="mood-note">
+      —— 那天的日记，林夏写了又划掉，划掉又重写，最后只剩下一句话：<br>
+      "他的怀抱，有草莓牛奶的味道。"
+    </div>
+
+    <div class="scene-break"><span>未完待续</span></div>
+  </section>
+
+</main>
+
+<!-- 尾页 -->
+<footer class="ending-section">
+  <div class="ending-text">故事，才刚刚开始</div>
+  <div class="ending-sub">下 一 章 · 敬 请 期 待</div>
+  <div class="ending-hearts">🌸 💕 🌸</div>
+</footer>
+
+<!-- 回到顶部 -->
+<button class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg viewBox="0 0 24 24"><path d="M12 4l-8 8h5v8h6v-8h5z"/></svg>
+</button>
+
+<script>
+  // ===== 樱花粒子 =====
+  const sakuraContainer = document.getElementById('sakuraContainer');
+  function createPetal() {
+    const petal = document.createElement('div');
+    petal.classList.add('petal');
+    petal.style.left = Math.random() * 100 + '%';
+    petal.style.animationDuration = (6 + Math.random() * 8) + 's';
+    petal.style.animationDelay = Math.random() * 5 + 's';
+    sakuraContainer.appendChild(petal);
+    setTimeout(() => petal.remove(), 18000);
+  }
+  for (let i = 0; i < 20; i++) setTimeout(createPetal, i * 300);
+  setInterval(createPetal, 800);
+
+  // ===== 背景音乐 & 音量控制 =====
+  const bgMusic = document.getElementById('bgMusic');
+  const musicBtn = document.getElementById('musicBtn');
+  const volumeSlider = document.getElementById('volumeSlider');
+  const volumeValue = document.getElementById('volumeValue');
+  const volumeIconWrap = document.getElementById('volumeIconWrap');
+  const volumeIcon = document.getElementById('volumeIcon');
+  const musicPanel = document.getElementById('musicPanel');
+
+  let isPlaying = false;
+  let previousVolume = 70;
+
+  // 初始化音量
+  bgMusic.volume = 0.7;
+  updateVolumeUI(70);
+
+  // 播放/暂停
+  function toggleMusic() {
+    if (isPlaying) {
+      bgMusic.pause();
+      musicBtn.classList.remove('playing');
+    } else {
+      bgMusic.play().catch(() => {});
+      musicBtn.classList.add('playing');
+    }
+    isPlaying = !isPlaying;
+  }
+
+  // 音量调节
+  function changeVolume(val) {
+    val = parseInt(val);
+    bgMusic.volume = val / 100;
+    previousVolume = val > 0 ? val : previousVolume;
+    updateVolumeUI(val);
+
+    // 取消静音状态
+    if (val > 0) {
+      volumeIconWrap.classList.remove('muted');
+    }
+  }
+
+  // 静音/取消静音
+  function toggleMute() {
+    if (bgMusic.volume > 0) {
+      previousVolume = volumeSlider.value;
+      bgMusic.volume = 0;
+      volumeSlider.value = 0;
+      updateVolumeUI(0);
+      volumeIconWrap.classList.add('muted');
+    } else {
+      bgMusic.volume = previousVolume / 100;
+      volumeSlider.value = previousVolume;
+      updateVolumeUI(previousVolume);
+      volumeIconWrap.classList.remove('muted');
+    }
+  }
+
+  // 更新音量UI
+  function updateVolumeUI(val) {
+    volumeValue.textContent = val + '%';
+    volumeSlider.style.setProperty('--volume', val + '%');
+
+    // 根据音量大小切换图标
+    let iconPath;
+    if (val === 0) {
+      iconPath = 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z';
+    } else if (val < 50) {
+      iconPath = 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z';
+    } else {
+      iconPath = 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z';
+    }
+    volumeIcon.innerHTML = '<path d="' + iconPath + '"/>';
+  }
+
+  // 手机端点击展开音量面板
+  musicPanel.addEventListener('click', function(e) {
+    if (window.innerWidth <= 600) {
+      if (!this.classList.contains('expanded')) {
+        this.classList.add('expanded');
+        e.stopPropagation();
+      }
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (window.innerWidth <= 600 && !musicPanel.contains(e.target)) {
+      musicPanel.classList.remove('expanded');
+    }
+  });
+
+  // ===== 阅读进度条 =====
+  const progressBar = document.getElementById('readingProgress');
+  window.addEventListener('scroll', () => {
+    const scrollTop = window.scrollY;
+    const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+    progressBar.style.width = (scrollTop / docHeight * 100) + '%';
+  });
+
+  // ===== 章节滚动观察 =====
+  const sections = document.querySelectorAll('.chapter-section');
+  const tabs = document.querySelectorAll('.chapter-tab');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        const idx = Array.from(sections).indexOf(entry.target);
+        tabs.forEach((t, i) => t.classList.toggle('active', i === idx));
+      }
+    });
+  }, { threshold: 0.15 });
+
+  sections.forEach(s => observer.observe(s));
+
+  function scrollToChapter(idx) {
+    sections[idx].scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ===== 导航栏阴影 =====
+  const chapterNav = document.getElementById('chapterNav');
+  window.addEventListener('scroll', () => {
+    chapterNav.classList.toggle('scrolled', window.scrollY > window.innerHeight - 60);
+  });
+
+  // ===== 回到顶部 =====
+  const backTop = document.getElementById('backTop');
+  window.addEventListener('scroll', () => {
+    backTop.classList.toggle('show', window.scrollY > 500);
+  });
+</script>
+
+</body>
+</html>
